@@ -1,4 +1,4 @@
-# main.py (VERSIÓN COMPLETA CON VETERINARIA)
+# main.py (IMPORTACIONES CORREGIDAS)
 from fastapi import FastAPI, Depends, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
@@ -6,10 +6,34 @@ from typing import List, Optional
 import os
 from datetime import datetime, date
 
-# Importar configuración y modelos
+# Importar configuración
 from app.config.database import get_db
-from app.models.veterinaria import *
-from app.schemas.veterinaria import *
+
+# Importar MODELOS SQLAlchemy (para queries)
+from app.models.veterinaria import (
+    Cliente as ClienteModel,
+    Mascota as MascotaModel,
+    Veterinario as VeterinarioModel,
+    Raza as RazaModel,
+    Especialidad as EspecialidadModel,
+    Servicio as ServicioModel,
+    TipoServicio as TipoServicioModel,
+    Consulta as ConsultaModel,
+    Cita as CitaModel,
+    TipoAnimal as TipoAnimalModel
+)
+
+# Importar ESQUEMAS Pydantic (para responses)
+from app.schemas.veterinaria import (
+    Cliente, ClienteCreate, ClienteConMascotas,
+    Mascota, MascotaCreate, MascotaConCliente,
+    Veterinario, VeterinarioConEspecialidad,
+    Raza, Especialidad, Servicio, ServicioConTipo,
+    TipoServicio, Consulta, ConsultaCompleta,
+    Cita, CitaCompleta,
+    EstadisticasVeterinaria, EstadoEnum, SexoMascotaEnum,
+    TurnoEnum, DisposicionEnum, CondicionGeneralEnum
+)
 
 app = FastAPI(
     title="🏥 Sistema Veterinaria API",
@@ -86,6 +110,7 @@ async def test_database(db: Session = Depends(get_db)):
 # ENDPOINTS DE CLIENTES
 # ================================
 
+# EJEMPLO CORREGIDO - Endpoint de clientes
 @app.get("/clientes", response_model=List[Cliente])
 async def get_clientes(
         skip: int = 0,
@@ -96,14 +121,40 @@ async def get_clientes(
         db: Session = Depends(get_db)
 ):
     """Obtener lista de clientes con filtros opcionales"""
-    query = db.query(Cliente)
+    # USAR EL MODELO (ClienteModel), NO EL ESQUEMA (Cliente)
+    query = db.query(ClienteModel)  # ← CAMBIO AQUÍ
 
     if nombre:
-        query = query.filter(Cliente.nombre.contains(nombre))
+        query = query.filter(ClienteModel.nombre.contains(nombre))
     if dni:
-        query = query.filter(Cliente.dni == dni)
+        query = query.filter(ClienteModel.dni == dni)
     if estado:
-        query = query.filter(Cliente.estado == estado)
+        query = query.filter(ClienteModel.estado == estado)
+
+    clientes = query.offset(skip).limit(limit).all()
+    return clientes
+
+
+# EJEMPLO CORREGIDO - Endpoint de stats
+@app.get("/clientes", response_model=List[Cliente])
+async def get_clientes(
+        skip: int = 0,
+        limit: int = 20,
+        nombre: Optional[str] = None,
+        dni: Optional[str] = None,
+        estado: Optional[EstadoEnum] = None,
+        db: Session = Depends(get_db)
+):
+    """Obtener lista de clientes con filtros opcionales"""
+    # USAR EL MODELO (ClienteModel), NO EL ESQUEMA (Cliente)
+    query = db.query(ClienteModel)  # ← CAMBIO AQUÍ
+
+    if nombre:
+        query = query.filter(ClienteModel.nombre.contains(nombre))
+    if dni:
+        query = query.filter(ClienteModel.dni == dni)
+    if estado:
+        query = query.filter(ClienteModel.estado == estado)
 
     clientes = query.offset(skip).limit(limit).all()
     return clientes
@@ -371,32 +422,12 @@ async def get_tipos_servicio(db: Session = Depends(get_db)):
 async def get_estadisticas(db: Session = Depends(get_db)):
     """Estadísticas generales del sistema"""
     return {
-        "total_clientes": db.query(Cliente).count(),
-        "total_mascotas": db.query(Mascota).count(),
-        "total_veterinarios": db.query(Veterinario).count(),
-        "total_consultas": db.query(Consulta).count(),
-        "total_citas_pendientes": db.query(Cita).filter(Cita.estado_cita == "Programada").count(),
-        "total_servicios_activos": db.query(Servicio).filter(Servicio.activo == True).count()
-    }
-
-
-@app.get("/stats/mascotas")
-async def get_estadisticas_mascotas(db: Session = Depends(get_db)):
-    """Estadísticas específicas de mascotas"""
-    # Contar por especie (basado en razas)
-    total_perros = db.query(Mascota).join(Raza).join(TipoAnimal).filter(TipoAnimal.descripcion == "Perro").count()
-    total_gatos = db.query(Mascota).join(Raza).join(TipoAnimal).filter(TipoAnimal.descripcion == "Gato").count()
-
-    # Mascotas esterilizadas
-    total_esterilizadas = db.query(Mascota).filter(Mascota.esterilizado == True).count()
-
-    return {
-        "total_por_especie": {
-            "perros": total_perros,
-            "gatos": total_gatos
-        },
-        "total_esterilizadas": total_esterilizadas,
-        "total_mascotas": db.query(Mascota).count()
+        "total_clientes": db.query(ClienteModel).count(),  # ← CAMBIO AQUÍ
+        "total_mascotas": db.query(MascotaModel).count(),  # ← CAMBIO AQUÍ
+        "total_veterinarios": db.query(VeterinarioModel).count(),  # ← CAMBIO AQUÍ
+        "total_consultas": db.query(ConsultaModel).count(),  # ← CAMBIO AQUÍ
+        "total_citas_pendientes": db.query(CitaModel).filter(CitaModel.estado_cita == "Programada").count(),
+        "total_servicios_activos": db.query(ServicioModel).filter(ServicioModel.activo == True).count()
     }
 
 
