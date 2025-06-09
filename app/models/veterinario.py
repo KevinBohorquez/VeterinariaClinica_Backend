@@ -1,6 +1,8 @@
 # app/models/veterinario.py
 from sqlalchemy import Column, Integer, String, Date, CHAR, Enum as SQLEnum, ForeignKey, CheckConstraint
 from app.models.base import Base
+from sqlalchemy.orm import relationship  # ← ASEGÚRATE DE TENER ESTO
+
 
 
 class Veterinario(Base):
@@ -23,6 +25,9 @@ class Veterinario(Base):
     fecha_ingreso = Column(Date, nullable=False)
     disposicion = Column(SQLEnum('Ocupado', 'Libre', name='disposicion_enum'), default='Libre')
     turno = Column(SQLEnum('Mañana', 'Tarde', 'Noche', name='turno_enum'), nullable=False)
+
+    usuario = relationship("Usuario", back_populates="veterinario")
+    especialidad = relationship("Especialidad")
 
     # Constraints de validación
     __table_args__ = (

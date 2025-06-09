@@ -15,7 +15,9 @@ from app.models.mascota import Mascota
 from app.models.tipo_servicio import TipoServicio
 from app.crud.clientes_crud import cliente
 from app.schemas.clientes_schema import ClienteCreate, ClienteUpdate, ClienteResponse, ClienteListResponse
-
+from app.models.especialidad import Especialidad
+from app.models.raza import Raza
+from app.models.cliente_mascota import ClienteMascota
 app = FastAPI(
     title="🏥 Sistema Veterinaria API",
     description="API para gestión de clientes veterinarios",

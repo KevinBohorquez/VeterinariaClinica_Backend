@@ -1,6 +1,10 @@
 # app/models/__init__.py
 from app.models.base import Base
 
+# Modelos de usuarios y autenticación
+from app.models.usuario import Usuario
+from app.models.administrador import Administrador
+
 # Modelos principales
 from app.models.clientes import Cliente
 from app.models.mascota import Mascota
@@ -32,8 +36,11 @@ from app.models.cliente_mascota import ClienteMascota
 # Exportar todos los modelos para fácil importación
 __all__ = [
     "Base",
+    # Usuarios y autenticación
+    "Usuario",
+    "Administrador",
     # Principales
-    "Cliente", 
+    "Cliente",
     "Mascota",
     "Veterinario",
     "Recepcionista",
@@ -41,7 +48,7 @@ __all__ = [
     "Raza",
     "TipoAnimal",
     "Especialidad",
-    "TipoServicio", 
+    "TipoServicio",
     "Servicio",
     "Patologia",
     # Procesos

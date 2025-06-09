@@ -1,8 +1,6 @@
-
 # app/models/especialidad.py
 from sqlalchemy import Column, Integer, String
 from app.models.base import Base
-
 
 class Especialidad(Base):
     __tablename__ = "Especialidad"

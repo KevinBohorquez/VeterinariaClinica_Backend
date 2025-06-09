@@ -2,7 +2,6 @@
 from sqlalchemy import Column, Integer, ForeignKey
 from app.models.base import Base
 
-
 class ClienteMascota(Base):
     __tablename__ = "Cliente_Mascota"
 

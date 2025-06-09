@@ -19,7 +19,8 @@ class Recepcionista(Base):
     turno = Column(SQLEnum('Mañana', 'Tarde', 'Noche', name='turno_recepcionista_enum'))
     estado = Column(SQLEnum('Activo', 'Inactivo', name='estado_recepcionista_enum'))
     genero = Column(CHAR(1), nullable=False)
-    
+
+    usuario = relationship("Usuario", back_populates="recepcionista")
     # Constraints de validación
     __table_args__ = (
         CheckConstraint("TRIM(nombre) != '' AND LENGTH(TRIM(nombre)) >= 2", name='check_nombre_recepcionista'),
