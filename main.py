@@ -14,7 +14,6 @@ from app.models.clientes import Cliente
 from app.api.v1.endpoints.clientes import router as clientes_router
 from app.api.v1.endpoints.veterinarios import router as veterinarios_router
 from app.api.v1.endpoints.recepcionistas import router as recepcionistas_router
-from app.api.v1.endpoints.solicitudes import router as solicitudes_router
 from app.api.v1.endpoints.mascota import router as mascotas_router  # ← Comentado hasta crear
 
 app = FastAPI(
@@ -36,7 +35,6 @@ app.include_router(clientes_router, prefix="/api/v1/clientes", tags=["clientes"]
 app.include_router(veterinarios_router, prefix="/api/v1/veterinarios", tags=["veterinarios"])
 app.include_router(recepcionistas_router, prefix="/api/v1/recepcionistas", tags=["recepcionistas"])
 
-app.include_router(solicitudes_router, prefix="/api/v1/solicitudes", tags=["solicitudes"])
 app.include_router(mascotas_router, prefix="/api/v1/mascotas", tags=["mascotas"])  # ← Comentado hasta crear
 
 # ===== ENDPOINTS BÁSICOS (solo estos en main) =====
