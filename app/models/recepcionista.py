@@ -1,5 +1,6 @@
 # app/models/recepcionista.py
-from sqlalchemy import Column, Integer, String, Date, CHAR, Enum as SQLEnum, CheckConstraint
+from sqlalchemy import Column, Integer, String, Date, CHAR, Enum as SQLEnum, CheckConstraint, ForeignKey  # ← Agregar ForeignKey aquí
+from sqlalchemy.orm import relationship
 from app.models.base import Base
 
 
