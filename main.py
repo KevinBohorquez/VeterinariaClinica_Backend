@@ -36,12 +36,58 @@ app.add_middleware(
 
 @app.get("/")
 async def root():
+    base_url = os.getenv("BASE_URL", "https://backendveterinariabd.up.railway.app/")  # Cambia por tu dominio real
+
     return {
         "message": "🏥 Sistema Veterinaria API funcionando!",
         "environment": os.getenv("ENVIRONMENT", "production"),
         "version": "1.0.0",
         "status": "OK",
-        "endpoints": [
+        "navigation": {
+            "📊 Sistema": {
+                "health": f"{base_url}/health",
+                "test_db": f"{base_url}/test-db",
+                "estadisticas": f"{base_url}/stats"
+            },
+            "👥 Usuarios": {
+                "lista": f"{base_url}/usuarios",
+                "ejemplo_por_id": f"{base_url}/usuarios/1"
+            },
+            "👨‍💼 Administradores": {
+                "lista": f"{base_url}/administradores",
+                "ejemplo_por_id": f"{base_url}/administradores/1"
+            },
+            "👨‍⚕️ Veterinarios": {
+                "lista": f"{base_url}/veterinarios",
+                "ejemplo_por_id": f"{base_url}/veterinarios/1",
+                "filtros": {
+                    "por_turno_mañana": f"{base_url}/veterinarios?turno=Mañana",
+                    "disponibles": f"{base_url}/veterinarios?disposicion=Libre"
+                }
+            },
+            "👥 Clientes": {
+                "lista": f"{base_url}/clientes",
+                "ejemplo_por_id": f"{base_url}/clientes/1",
+                "buscar": f"{base_url}/clientes/search?nombre=María",
+                "filtros": {
+                    "activos": f"{base_url}/clientes?estado=Activo",
+                    "pagina_2": f"{base_url}/clientes?page=2"
+                }
+            },
+            "🐕 Mascotas": {
+                "lista": f"{base_url}/mascotas",
+                "ejemplo_por_id": f"{base_url}/mascotas/1",
+                "filtros": {
+                    "machos": f"{base_url}/mascotas?sexo=Macho",
+                    "por_raza": f"{base_url}/mascotas?raza_id=1"
+                }
+            },
+            "🏥 Tipos de Servicio": {
+                "lista": f"{base_url}/tipos-servicio",
+                "ejemplo_por_id": f"{base_url}/tipos-servicio/1"
+            }
+        },
+        "endpoints_raw": [
             "/health - Estado del sistema",
             "/test-db - Probar conexión DB",
             "/clientes - Lista de clientes",
