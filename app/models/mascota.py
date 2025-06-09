@@ -1,6 +1,7 @@
 # app/models/mascota.py
 from sqlalchemy import Column, Integer, String, Enum as SQLEnum, ForeignKey, Boolean, CheckConstraint
 from app.models.base import Base
+from sqlalchemy.orm import relationship
 
 
 class Mascota(Base):
@@ -16,7 +17,10 @@ class Mascota(Base):
     edad_meses = Column(Integer)
     esterilizado = Column(Boolean, default=False)
     imagen = Column(String(50))
-    
+
+    raza = relationship("Raza", back_populates="mascotas")
+    # Relación many-to-many con Cliente a través de Cliente_Mascota
+    clientes = relationship("Cliente", secondary="Cliente_Mascota", back_populates="mascotas")
     # Constraints de validación
     __table_args__ = (
         CheckConstraint("TRIM(nombre) != '' AND LENGTH(TRIM(nombre)) >= 2", name='check_nombre_mascota'),
