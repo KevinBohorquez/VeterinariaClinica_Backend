@@ -148,7 +148,7 @@ async def form_cliente():
             <input type="text" name="direccion">
 
             <label>Género:</label>
-            <select name="genero">
+            <select name="genero" required>
                 <option value="M">Masculino</option>
                 <option value="F">Femenino</option>
             </select>
@@ -167,7 +167,6 @@ async def form_cliente():
                 const data = Object.fromEntries(formData);
 
                 try {
-                    // Construir URL para GET con parámetros
                     const params = new URLSearchParams(data);
                     const response = await fetch('/crear-cliente?' + params.toString(), {
                         method: 'GET'
@@ -176,7 +175,7 @@ async def form_cliente():
                     const result = await response.json();
 
                     if (response.ok) {
-                        messageDiv.innerHTML = '<div class="success">✅ Cliente creado exitosamente!</div>';
+                        messageDiv.innerHTML = '<div class="success">✅ Cliente creado exitosamente! ID: ' + result.cliente_id + '</div>';
                         e.target.reset();
                     } else {
                         messageDiv.innerHTML = '<div class="error">❌ Error: ' + result.detail + '</div>';
@@ -192,7 +191,7 @@ async def form_cliente():
     return html_content
 
 
-# Endpoint GET para crear cliente (desde el formulario)
+# Endpoint para crear cliente (SIN estado, la BD lo maneja automáticamente)
 @app.get("/crear-cliente")
 async def crear_cliente_get(
         nombre: str,
@@ -201,18 +200,23 @@ async def crear_cliente_get(
         dni: str,
         telefono: str,
         email: str,
+        genero: str,
         direccion: str = "",
-        genero: str = "M",
         db: Session = Depends(get_db)
 ):
     """Crear cliente via GET desde formulario"""
     try:
         # Validar DNI único
-        existing = db.query(Cliente).filter(Cliente.dni == dni).first()
-        if existing:
-            raise HTTPException(status_code=400, detail="DNI ya existe")
+        existing_dni = db.query(Cliente).filter(Cliente.dni == dni).first()
+        if existing_dni:
+            raise HTTPException(status_code=400, detail="Ya existe un cliente con este DNI")
 
-        # Crear cliente
+        # Validar email único
+        existing_email = db.query(Cliente).filter(Cliente.email == email).first()
+        if existing_email:
+            raise HTTPException(status_code=400, detail="Ya existe un cliente con este email")
+
+        # Crear cliente (sin estado - lo maneja la BD automáticamente)
         nuevo_cliente = Cliente(
             nombre=nombre,
             apellido_paterno=apellido_paterno,
@@ -221,8 +225,9 @@ async def crear_cliente_get(
             telefono=telefono,
             email=email,
             direccion=direccion if direccion else None,
-            genero=genero,
-            estado="Activo"
+            genero=genero
+            # fecha_registro se asigna automáticamente
+            # estado no se incluye si no tiene DEFAULT en la tabla
         )
 
         db.add(nuevo_cliente)
@@ -232,14 +237,15 @@ async def crear_cliente_get(
         return {
             "success": True,
             "message": "Cliente creado exitosamente",
-            "cliente_id": nuevo_cliente.id_cliente
+            "cliente_id": nuevo_cliente.id_cliente,
+            "nombre_completo": f"{nuevo_cliente.nombre} {nuevo_cliente.apellido_paterno}"
         }
 
     except HTTPException:
         raise
     except Exception as e:
         db.rollback()
-        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error al crear cliente: {str(e)}")
 
 @app.get("/health")
 async def health():
