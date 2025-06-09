@@ -1,16 +1,17 @@
 # app/schemas/__init__.py
 
 # Schemas base
-from .base_schema import BaseResponse, PaginationResponse, MessageResponse, ErrorResponse
+from .base_schema import BaseResponse, PaginationResponse, MessageResponse
+# Nota: ErrorResponse no existe en base_schema, lo removemos o lo agregamos
 
 # Schemas principales
 from .clientes_schema import (
-    ClienteCreate, ClienteUpdate, ClienteResponse, 
+    ClienteCreate, ClienteUpdate, ClienteResponse,
     ClienteListResponse, ClienteSearch
 )
 
 from .mascota_schema import (
-    MascotaCreate, MascotaUpdate, MascotaResponse, 
+    MascotaCreate, MascotaUpdate, MascotaResponse,
     MascotaSearch, MascotaClienteCreate, MascotaWithClienteResponse,
     MascotaWithRazaResponse, MascotaCompleteResponse
 )
@@ -41,45 +42,46 @@ from .consulta_schema import (
     # Solicitud y Triaje
     SolicitudAtencionCreate, SolicitudAtencionResponse,
     TriajeCreate, TriajeResponse,
-    
+
     # Consulta y Diagnóstico
     ConsultaCreate, ConsultaResponse,
     DiagnosticoCreate, DiagnosticoResponse,
     TratamientoCreate, TratamientoResponse,
-    
+
     # Servicios y Citas
     ServicioSolicitadoCreate, ServicioSolicitadoResponse,
     CitaCreate, CitaUpdate, CitaResponse,
     ResultadoServicioCreate, ResultadoServicioResponse,
-    
+
     # Historial
     HistorialClinicoCreate, HistorialClinicoResponse,
-    
+
     # Búsquedas
     ConsultaSearch, CitaSearch, HistorialSearch
 )
 
 __all__ = [
     # Base
-    "BaseResponse", "PaginationResponse", "MessageResponse", "ErrorResponse",
-    
+    "BaseResponse", "PaginationResponse", "MessageResponse",
+
     # Cliente
-    "ClienteCreate", "ClienteUpdate", "ClienteResponse", 
+    "ClienteCreate", "ClienteUpdate", "ClienteResponse",
     "ClienteListResponse", "ClienteSearch",
-    
-    # Mascota
+
+    # Mascota (CORREGIDO - usando los nombres que SÍ importas)
     "MascotaCreate", "MascotaUpdate", "MascotaResponse",
-    "MascotaWithDetailsResponse", "MascotaListResponse", "MascotaSearch",
-    
+    "MascotaSearch", "MascotaClienteCreate", "MascotaWithClienteResponse",
+    "MascotaWithRazaResponse", "MascotaCompleteResponse",
+
     # Veterinario
     "VeterinarioCreate", "VeterinarioUpdate", "VeterinarioLogin",
     "VeterinarioResponse", "VeterinarioWithEspecialidadResponse",
     "VeterinarioListResponse", "VeterinarioSearch",
-    
+
     # Recepcionista
     "RecepcionistaCreate", "RecepcionistaUpdate", "RecepcionistaLogin",
     "RecepcionistaResponse", "RecepcionistaListResponse", "RecepcionistaSearch",
-    
+
     # Catálogos
     "RazaCreate", "RazaResponse",
     "TipoAnimalCreate", "TipoAnimalResponse",
@@ -87,7 +89,7 @@ __all__ = [
     "TipoServicioCreate", "TipoServicioResponse",
     "ServicioCreate", "ServicioUpdate", "ServicioResponse", "ServicioWithTipoResponse",
     "PatologiaCreate", "PatologiaResponse",
-    
+
     # Procesos clínicos
     "SolicitudAtencionCreate", "SolicitudAtencionResponse",
     "TriajeCreate", "TriajeResponse",
@@ -98,7 +100,7 @@ __all__ = [
     "CitaCreate", "CitaUpdate", "CitaResponse",
     "ResultadoServicioCreate", "ResultadoServicioResponse",
     "HistorialClinicoCreate", "HistorialClinicoResponse",
-    
+
     # Búsquedas
     "ConsultaSearch", "CitaSearch", "HistorialSearch"
 ]
