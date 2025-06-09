@@ -14,6 +14,9 @@ from app.models.clientes import Cliente
 from app.api.v1.endpoints.clientes import router as clientes_router
 from app.api.v1.endpoints.veterinarios import router as veterinarios_router
 from app.api.v1.endpoints.recepcionistas import router as recepcionistas_router
+from app.api.v1.endpoints.triaje import router as triajes_router
+from app.api.v1.endpoints.solicitudes import router as solicitudes_router
+# from app.api.v1.endpoints.mascotas import router as mascotas_router  # ← Comentado hasta crear
 
 app = FastAPI(
     title="🏥 Sistema Veterinaria API",
@@ -33,6 +36,9 @@ app.add_middleware(
 app.include_router(clientes_router, prefix="/api/v1/clientes", tags=["clientes"])
 app.include_router(veterinarios_router, prefix="/api/v1/veterinarios", tags=["veterinarios"])
 app.include_router(recepcionistas_router, prefix="/api/v1/recepcionistas", tags=["recepcionistas"])
+app.include_router(triajes_router, prefix="/api/v1/triajes", tags=["triajes"])
+app.include_router(solicitudes_router, prefix="/api/v1/solicitudes", tags=["solicitudes"])
+# app.include_router(mascotas_router, prefix="/api/v1/mascotas", tags=["mascotas"])  # ← Comentado hasta crear
 
 # ===== ENDPOINTS BÁSICOS (solo estos en main) =====
 
@@ -80,6 +86,15 @@ async def root():
         }
     }
 
+@app.get("/health")
+async def health():
+    return {
+        "status": "healthy",
+        "timestamp": datetime.now().isoformat(),
+        "service": "veterinaria-api",
+        "version": "1.0.0"
+    }
+
 @app.get("/test-db")
 async def test_database(db: Session = Depends(get_db)):
     """Probar conexión a la base de datos"""
@@ -107,6 +122,93 @@ async def test_database(db: Session = Depends(get_db)):
             status_code=500,
             detail=f"Error inesperado: {str(e)}"
         )
+
+@app.get("/stats")
+async def get_estadisticas_generales(db: Session = Depends(get_db)):
+    """Obtener estadísticas generales del sistema"""
+    try:
+        from app.models.veterinario import Veterinario
+        from app.models.recepcionista import Recepcionista
+
+        # Estadísticas de clientes
+        total_clientes = db.query(Cliente).count()
+        clientes_activos = db.query(Cliente).filter(Cliente.estado == "Activo").count()
+
+        # Estadísticas de veterinarios
+        total_veterinarios = db.query(Veterinario).count()
+        veterinarios_disponibles = db.query(Veterinario).filter(Veterinario.disposicion == "Libre").count()
+
+        # Estadísticas de recepcionistas
+        total_recepcionistas = db.query(Recepcionista).count()
+        recepcionistas_activas = db.query(Recepcionista).filter(Recepcionista.estado == "Activo").count()
+
+        return {
+            "resumen": {
+                "total_usuarios": total_clientes + total_veterinarios + total_recepcionistas,
+                "timestamp": datetime.now().isoformat()
+            },
+            "clientes": {
+                "total": total_clientes,
+                "activos": clientes_activos,
+                "inactivos": total_clientes - clientes_activos,
+                "porcentaje_activos": round((clientes_activos / total_clientes * 100), 2) if total_clientes > 0 else 0
+            },
+            "veterinarios": {
+                "total": total_veterinarios,
+                "disponibles": veterinarios_disponibles,
+                "ocupados": total_veterinarios - veterinarios_disponibles,
+                "porcentaje_disponibles": round((veterinarios_disponibles / total_veterinarios * 100), 2) if total_veterinarios > 0 else 0
+            },
+            "recepcionistas": {
+                "total": total_recepcionistas,
+                "activas": recepcionistas_activas,
+                "inactivas": total_recepcionistas - recepcionistas_activas,
+                "porcentaje_activas": round((recepcionistas_activas / total_recepcionistas * 100), 2) if total_recepcionistas > 0 else 0
+            }
+        }
+
+    except SQLAlchemyError as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error al obtener estadísticas: {str(e)}"
+        )
+
+@app.get("/info")
+async def get_api_info():
+    """Información detallada de la API"""
+    return {
+        "name": "Sistema Veterinaria API",
+        "version": "1.0.0",
+        "description": "API completa para gestión de veterinaria",
+        "modules": {
+            "clientes": {
+                "description": "Gestión de clientes",
+                "endpoints": 8,
+                "features": ["CRUD completo", "Búsqueda", "Filtros", "Paginación"]
+            },
+            "veterinarios": {
+                "description": "Gestión de veterinarios",
+                "endpoints": 10,
+                "features": ["CRUD completo", "Especialidades", "Disponibilidad", "Citas"]
+            },
+            "recepcionistas": {
+                "description": "Gestión de recepcionistas",
+                "endpoints": 9,
+                "features": ["CRUD completo", "Turnos", "Estados", "Búsqueda"]
+            }
+        },
+        "database": {
+            "engine": "MySQL",
+            "orm": "SQLAlchemy",
+            "migrations": "Alembic"
+        },
+        "authentication": "JWT (próximamente)",
+        "docs": {
+            "swagger": "/docs",
+            "redoc": "/redoc",
+            "openapi": "/openapi.json"
+        }
+    }
 
 if __name__ == "__main__":
     import uvicorn
