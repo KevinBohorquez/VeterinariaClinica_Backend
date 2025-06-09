@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy.exc import SQLAlchemyError
 from typing import Optional
 import os
+from fastapi.responses import HTMLResponse
 from datetime import datetime
 from app.config.database import get_db
 from app.models.clientes import Cliente
@@ -36,7 +37,7 @@ app.add_middleware(
 
 @app.get("/")
 async def root():
-    base_url = os.getenv("BASE_URL", "https://backendveterinariabd.up.railway.app/")  # Cambia por tu dominio real
+    base_url = os.getenv("BASE_URL", "https://backendveterinariabd.up.railway.app")  # Cambia por tu dominio real
 
     return {
         "message": "🏥 Sistema Veterinaria API funcionando!",
@@ -102,6 +103,84 @@ async def root():
         ]
     }
 
+
+@app.get("/form-cliente", response_class=HTMLResponse)
+async def form_cliente():
+    """Formulario para crear cliente"""
+    html_content = """
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Agregar Cliente</title>
+        <style>
+            body { font-family: Arial; max-width: 600px; margin: 50px auto; padding: 20px; }
+            input, select { width: 100%; padding: 10px; margin: 5px 0 15px 0; }
+            button { background: #007bff; color: white; padding: 12px 24px; border: none; cursor: pointer; }
+        </style>
+    </head>
+    <body>
+        <h2>🏥 Agregar Nuevo Cliente</h2>
+        <form id="clienteForm">
+            <label>Nombre:</label>
+            <input type="text" name="nombre" required>
+
+            <label>Apellido Paterno:</label>
+            <input type="text" name="apellido_paterno" required>
+
+            <label>Apellido Materno:</label>
+            <input type="text" name="apellido_materno" required>
+
+            <label>DNI:</label>
+            <input type="text" name="dni" pattern="[0-9]{8}" required>
+
+            <label>Teléfono:</label>
+            <input type="text" name="telefono" pattern="9[0-9]{8}" required>
+
+            <label>Email:</label>
+            <input type="email" name="email" required>
+
+            <label>Dirección:</label>
+            <input type="text" name="direccion">
+
+            <label>Género:</label>
+            <select name="genero">
+                <option value="M">Masculino</option>
+                <option value="F">Femenino</option>
+            </select>
+
+            <button type="submit">✅ Agregar Cliente</button>
+        </form>
+
+        <script>
+            document.getElementById('clienteForm').onsubmit = async function(e) {
+                e.preventDefault();
+                const formData = new FormData(e.target);
+                const data = Object.fromEntries(formData);
+
+                try {
+                    const response = await fetch('/clientes', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify(data)
+                    });
+
+                    const result = await response.json();
+
+                    if (response.ok) {
+                        alert('✅ Cliente creado exitosamente!');
+                        e.target.reset();
+                    } else {
+                        alert('❌ Error: ' + result.detail);
+                    }
+                } catch (error) {
+                    alert('❌ Error de conexión');
+                }
+            };
+        </script>
+    </body>
+    </html>
+    """
+    return html_content
 
 @app.get("/health")
 async def health():
