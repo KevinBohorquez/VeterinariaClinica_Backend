@@ -23,7 +23,7 @@ class CRUDMascota(CRUDBase[Mascota, MascotaCreate, MascotaUpdate]):
                 m.esterilizado,
                 m.imagen,
                 m.id_raza,
-                r.nombre_raza,
+                r.nombre_raza
             FROM Mascota m
             INNER JOIN Cliente_Mascota cm ON m.id_mascota = cm.id_mascota
             LEFT JOIN Raza r ON m.id_raza = r.id_raza
