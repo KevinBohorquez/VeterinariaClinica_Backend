@@ -122,3 +122,7 @@ def authenticate_veterinario(
             detail="Email o contraseña incorrectos"
         )
     return vet
+
+
+def get_recepcionista_or_404():
+    return None

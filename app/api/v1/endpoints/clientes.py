@@ -7,17 +7,18 @@ from app.config.database import get_db
 from app.crud import cliente
 from app.models.clientes import Cliente  # ✅ Importar el modelo directamente
 from app.schemas import (
-    ClienteCreate, ClienteUpdate, ClienteResponse, 
+    ClienteCreate, ClienteUpdate, ClienteResponse,
     ClienteListResponse, ClienteSearch, MessageResponse
 )
 from app.api.deps import get_cliente_or_404, validate_pagination
 
 router = APIRouter()
 
+
 @router.post("/", response_model=ClienteResponse, status_code=status.HTTP_201_CREATED)
 async def create_cliente(
-    cliente_data: ClienteCreate,
-    db: Session = Depends(get_db)
+        cliente_data: ClienteCreate,
+        db: Session = Depends(get_db)
 ):
     """
     Crear un nuevo cliente
@@ -28,34 +29,35 @@ async def create_cliente(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Ya existe un cliente con ese DNI"
         )
-    
+
     if cliente.exists_by_email(db, email=cliente_data.email):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Ya existe un cliente con ese email"
         )
-    
+
     return cliente.create(db, obj_in=cliente_data)
+
 
 @router.get("/", response_model=ClienteListResponse)
 async def get_clientes(
-    db: Session = Depends(get_db),
-    page: int = Query(1, ge=1, description="Número de página"),
-    per_page: int = Query(20, ge=1, le=100, description="Elementos por página"),
-    estado: Optional[str] = Query(None, description="Filtrar por estado")
+        db: Session = Depends(get_db),
+        page: int = Query(1, ge=1, description="Número de página"),
+        per_page: int = Query(20, ge=1, le=100, description="Elementos por página"),
+        estado: Optional[str] = Query(None, description="Filtrar por estado")
 ):
     """
     Obtener lista de clientes con paginación
     """
     skip = (page - 1) * per_page
-    
+
     query = db.query(Cliente)  # ✅ Usar Cliente directamente
     if estado:
         query = query.filter(Cliente.estado == estado)
-    
+
     total = query.count()
     clientes = query.offset(skip).limit(per_page).all()
-    
+
     return {
         "clientes": clientes,
         "total": total,
@@ -64,20 +66,22 @@ async def get_clientes(
         "total_pages": (total + per_page - 1) // per_page
     }
 
+
 @router.get("/{cliente_id}", response_model=ClienteResponse)
 async def get_cliente(
-    cliente_obj: Cliente = Depends(get_cliente_or_404)  # ✅ CORRECTO
+        cliente_obj: Cliente = Depends(get_cliente_or_404)  # ✅ CORRECTO
 ):
     """
     Obtener un cliente específico por ID
     """
     return cliente_obj
 
+
 @router.put("/{cliente_id}", response_model=ClienteResponse)
 async def update_cliente(
-    cliente_id: int,
-    cliente_data: ClienteUpdate,
-    db: Session = Depends(get_db)
+        cliente_id: int,
+        cliente_data: ClienteUpdate,
+        db: Session = Depends(get_db)
 ):
     """
     Actualizar un cliente
@@ -89,31 +93,32 @@ async def update_cliente(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Cliente no encontrado"
         )
-    
+
     # Validar duplicados si se están actualizando
     update_data = cliente_data.dict(exclude_unset=True)
-    
+
     if "dni" in update_data:
         if cliente.exists_by_dni(db, dni=update_data["dni"], exclude_id=cliente_id):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Ya existe un cliente con ese DNI"
             )
-    
+
     if "email" in update_data:
         if cliente.exists_by_email(db, email=update_data["email"], exclude_id=cliente_id):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Ya existe un cliente con ese email"
             )
-    
+
     return cliente.update(db, db_obj=cliente_obj, obj_in=cliente_data)
+
 
 @router.delete("/{cliente_id}", response_model=MessageResponse)
 async def delete_cliente(
-    cliente_id: int,
-    db: Session = Depends(get_db),
-    permanent: bool = Query(False, description="Eliminación permanente")
+        cliente_id: int,
+        db: Session = Depends(get_db),
+        permanent: bool = Query(False, description="Eliminación permanente")
 ):
     """
     Eliminar un cliente (soft delete por defecto)
@@ -124,26 +129,27 @@ async def delete_cliente(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Cliente no encontrado"
         )
-    
+
     if permanent:
         cliente.remove(db, id=cliente_id)
         message = "Cliente eliminado permanentemente"
     else:
         cliente.soft_delete(db, id=cliente_id)
         message = "Cliente desactivado"
-    
+
     return {"message": message, "success": True}
+
 
 @router.post("/search", response_model=ClienteListResponse)
 async def search_clientes(
-    search_params: ClienteSearch,
-    db: Session = Depends(get_db)
+        search_params: ClienteSearch,
+        db: Session = Depends(get_db)
 ):
     """
     Buscar clientes con filtros avanzados
     """
     clientes_result, total = cliente.search_clientes(db, search_params=search_params)
-    
+
     return {
         "clientes": clientes_result,
         "total": total,
@@ -152,16 +158,17 @@ async def search_clientes(
         "total_pages": (total + search_params.per_page - 1) // search_params.per_page
     }
 
+
 @router.get("/{cliente_id}/mascotas")
 async def get_mascotas_cliente(
-    cliente_id: int,
-    db: Session = Depends(get_db)
+        cliente_id: int,
+        db: Session = Depends(get_db)
 ):
     """
     Obtener todas las mascotas de un cliente
     """
     from app.crud import mascota
-    
+
     # Verificar que el cliente existe
     cliente_obj = cliente.get(db, cliente_id)
     if not cliente_obj:
@@ -169,9 +176,9 @@ async def get_mascotas_cliente(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Cliente no encontrado"
         )
-    
+
     mascotas = mascota.get_mascotas_by_cliente(db, cliente_id=cliente_id)
-    
+
     return {
         "cliente": {
             "id": cliente_obj.id_cliente,
@@ -181,10 +188,11 @@ async def get_mascotas_cliente(
         "total_mascotas": len(mascotas)
     }
 
+
 @router.get("/dni/{dni}", response_model=ClienteResponse)
 async def get_cliente_by_dni(
-    dni: str,
-    db: Session = Depends(get_db)
+        dni: str,
+        db: Session = Depends(get_db)
 ):
     """
     Obtener cliente por DNI
@@ -197,10 +205,11 @@ async def get_cliente_by_dni(
         )
     return cliente_obj
 
+
 @router.get("/email/{email}", response_model=ClienteResponse)
 async def get_cliente_by_email(
-    email: str,
-    db: Session = Depends(get_db)
+        email: str,
+        db: Session = Depends(get_db)
 ):
     """
     Obtener cliente por email
