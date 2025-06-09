@@ -102,7 +102,6 @@ async def root():
                 "get_by_dni": "GET /api/v1/recepcionistas/dni/{dni}",
                 "get_by_email": "GET /api/v1/recepcionistas/email/{email}",
                 "por_turno": "GET /api/v1/recepcionistas/turno/{turno}",
-                "activas": "GET /api/v1/recepcionistas/activas",
                 "update": "PUT /api/v1/recepcionistas/{id}",
                 "search": "POST /api/v1/recepcionistas/search"
             },

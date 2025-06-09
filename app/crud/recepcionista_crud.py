@@ -73,13 +73,6 @@ class CRUDRecepcionista(CRUDBase[Recepcionista, RecepcionistaCreate, Recepcionis
             query = query.filter(Recepcionista.estado == estado)
         return query.all()
 
-    def get_activas(self, db: Session, *, turno: Optional[str] = None) -> List[Recepcionista]:
-        """Obtener solo recepcionistas activas"""
-        query = db.query(Recepcionista).filter(Recepcionista.estado == "Activo")
-        if turno:
-            query = query.filter(Recepcionista.turno == turno)
-        return query.all()
-
     def cambiar_estado(self, db: Session, *, recepcionista_id: int, nuevo_estado: str) -> Optional[Recepcionista]:
         """Cambiar el estado de una recepcionista"""
         recepcionista_obj = db.query(Recepcionista).filter(Recepcionista.id_recepcionista == recepcionista_id).first()
