@@ -17,6 +17,7 @@ class Cliente(Base):
     direccion = Column(Text)
     fecha_registro = Column(DateTime, default=func.current_timestamp())
     estado = Column(SQLEnum('Activo', 'Inactivo', name='estado_cliente_enum'))
+    genero = Column(CHAR(1), nullable=False)  # ← AGREGAR ESTA LÍNEA
     
     # Constraints de validación
     __table_args__ = (
@@ -26,4 +27,5 @@ class Cliente(Base):
         CheckConstraint("dni REGEXP '^[0-9]{8}'", name='check_dni_cliente'),
         CheckConstraint("telefono REGEXP '^9[0-9]{8}", name='check_telefono_cliente'),
         CheckConstraint("email REGEXP '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}", name='check_email_cliente'),
+        CheckConstraint("genero IN ('F', 'M')", name='check_genero_cliente'),  # ← AGREGAR ESTA LÍNEA
     )
