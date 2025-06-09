@@ -34,9 +34,6 @@ from .cita_crud import (
 # CRUD Historial
 from .historial_crud import historial_clinico
 
-# CRUD Solicitudes
-from .solicitud_crud import solicitud
-
 # CRUD Dashboard
 from .dashboard_crud import dashboard
 
@@ -77,6 +74,5 @@ __all__ = [
     "resultado_servicio",
     
     # Otros
-    "solicitud",
     "dashboard"
 ]
