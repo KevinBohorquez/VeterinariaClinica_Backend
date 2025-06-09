@@ -1,6 +1,7 @@
-# app/crud/catalogo_crud.py
+# app/crud/catalogo_crud.py (VERSIÓN COMPLETA)
 from sqlalchemy.orm import Session
-from typing import List, Optional
+from sqlalchemy import and_, or_, func
+from typing import List, Optional, Tuple, Dict, Any
 from app.crud.base_crud import CRUDBase
 from app.models.raza import Raza
 from app.models.tipo_animal import TipoAnimal
@@ -13,18 +14,73 @@ from app.schemas.catalogo_schemas import (
     TipoServicioCreate, ServicioCreate, ServicioUpdate, PatologiaCreate
 )
 
-# ===== RAZA =====
+# ===== RAZA COMPLETO =====
 class CRUDRaza(CRUDBase[Raza, RazaCreate, None]):
     
     def get_by_nombre(self, db: Session, *, nombre_raza: str) -> Optional[Raza]:
-        """Obtener raza por nombre"""
-        return db.query(Raza).filter(Raza.nombre_raza.ilike(f"%{nombre_raza}%")).first()
+        """Obtener raza por nombre exacto"""
+        return db.query(Raza).filter(Raza.nombre_raza == nombre_raza).first()
 
     def search_razas(self, db: Session, *, nombre: str) -> List[Raza]:
-        """Buscar razas por nombre"""
-        return db.query(Raza).filter(Raza.nombre_raza.ilike(f"%{nombre}%")).all()
+        """Buscar razas por nombre (parcial)"""
+        return db.query(Raza).filter(Raza.nombre_raza.ilike(f"%{nombre}%"))\
+                             .order_by(Raza.nombre_raza).all()
 
-# ===== TIPO ANIMAL =====
+    def exists_by_nombre(self, db: Session, *, nombre_raza: str, exclude_id: Optional[int] = None) -> bool:
+        """Verificar si existe una raza con ese nombre"""
+        query = db.query(Raza).filter(Raza.nombre_raza == nombre_raza)
+        if exclude_id:
+            query = query.filter(Raza.id_raza != exclude_id)
+        return query.first() is not None
+
+    def get_razas_con_mascotas_count(self, db: Session) -> List[Dict[str, Any]]:
+        """Obtener razas con conteo de mascotas"""
+        from app.models.mascota import Mascota
+        
+        resultado = db.query(
+            Raza.id_raza,
+            Raza.nombre_raza,
+            func.count(Mascota.id_mascota).label('total_mascotas')
+        ).outerjoin(Mascota, Raza.id_raza == Mascota.id_raza)\
+         .group_by(Raza.id_raza, Raza.nombre_raza)\
+         .order_by(Raza.nombre_raza).all()
+        
+        return [
+            {
+                "id_raza": r.id_raza,
+                "nombre_raza": r.nombre_raza,
+                "total_mascotas": r.total_mascotas or 0
+            }
+            for r in resultado
+        ]
+
+    def get_razas_populares(self, db: Session, *, limit: int = 10) -> List[Dict[str, Any]]:
+        """Obtener razas más populares por número de mascotas"""
+        from app.models.mascota import Mascota
+        
+        resultado = db.query(
+            Raza.id_raza,
+            Raza.nombre_raza,
+            func.count(Mascota.id_mascota).label('total_mascotas')
+        ).join(Mascota, Raza.id_raza == Mascota.id_raza)\
+         .group_by(Raza.id_raza, Raza.nombre_raza)\
+         .order_by(func.count(Mascota.id_mascota).desc())\
+         .limit(limit).all()
+        
+        return [
+            {
+                "id_raza": r.id_raza,
+                "nombre_raza": r.nombre_raza,
+                "total_mascotas": r.total_mascotas
+            }
+            for r in resultado
+        ]
+
+    def get_all_ordenadas(self, db: Session) -> List[Raza]:
+        """Obtener todas las razas ordenadas alfabéticamente"""
+        return db.query(Raza).order_by(Raza.nombre_raza).all()
+
+# ===== TIPO ANIMAL COMPLETO =====
 class CRUDTipoAnimal(CRUDBase[TipoAnimal, TipoAnimalCreate, None]):
     
     def get_by_raza(self, db: Session, *, raza_id: int) -> List[TipoAnimal]:
@@ -35,41 +91,192 @@ class CRUDTipoAnimal(CRUDBase[TipoAnimal, TipoAnimalCreate, None]):
         """Obtener tipos de animal por descripción (Perro/Gato)"""
         return db.query(TipoAnimal).filter(TipoAnimal.descripcion == descripcion).all()
 
-# ===== ESPECIALIDAD =====
+    def get_with_raza_info(self, db: Session) -> List[Dict[str, Any]]:
+        """Obtener tipos de animal con información de raza"""
+        resultado = db.query(
+            TipoAnimal.id_tipo_animal,
+            TipoAnimal.id_raza,
+            TipoAnimal.descripcion,
+            Raza.nombre_raza
+        ).join(Raza, TipoAnimal.id_raza == Raza.id_raza)\
+         .order_by(TipoAnimal.descripcion, Raza.nombre_raza).all()
+        
+        return [
+            {
+                "id_tipo_animal": r.id_tipo_animal,
+                "id_raza": r.id_raza,
+                "descripcion": r.descripcion,
+                "nombre_raza": r.nombre_raza
+            }
+            for r in resultado
+        ]
+
+    def exists_combination(self, db: Session, *, raza_id: int, descripcion: str) -> bool:
+        """Verificar si existe la combinación raza-descripción"""
+        return db.query(TipoAnimal).filter(
+            and_(
+                TipoAnimal.id_raza == raza_id,
+                TipoAnimal.descripcion == descripcion
+            )
+        ).first() is not None
+
+    def get_estadisticas(self, db: Session) -> Dict[str, Any]:
+        """Obtener estadísticas de tipos de animal"""
+        total = db.query(TipoAnimal).count()
+        perros = db.query(TipoAnimal).filter(TipoAnimal.descripcion == "Perro").count()
+        gatos = db.query(TipoAnimal).filter(TipoAnimal.descripcion == "Gato").count()
+        
+        return {
+            "total_tipos": total,
+            "perros": perros,
+            "gatos": gatos,
+            "razas_perros": perros,
+            "razas_gatos": gatos
+        }
+
+# ===== ESPECIALIDAD COMPLETO =====
 class CRUDEspecialidad(CRUDBase[Especialidad, EspecialidadCreate, None]):
     
     def get_by_descripcion(self, db: Session, *, descripcion: str) -> Optional[Especialidad]:
-        """Obtener especialidad por descripción"""
-        return db.query(Especialidad).filter(Especialidad.descripcion.ilike(f"%{descripcion}%")).first()
+        """Obtener especialidad por descripción exacta"""
+        return db.query(Especialidad).filter(Especialidad.descripcion == descripcion).first()
 
     def search_especialidades(self, db: Session, *, descripcion: str) -> List[Especialidad]:
-        """Buscar especialidades por descripción"""
-        return db.query(Especialidad).filter(Especialidad.descripcion.ilike(f"%{descripcion}%")).all()
+        """Buscar especialidades por descripción (parcial)"""
+        return db.query(Especialidad).filter(Especialidad.descripcion.ilike(f"%{descripcion}%"))\
+                                    .order_by(Especialidad.descripcion).all()
 
-# ===== TIPO SERVICIO =====
+    def exists_by_descripcion(self, db: Session, *, descripcion: str, exclude_id: Optional[int] = None) -> bool:
+        """Verificar si existe una especialidad con esa descripción"""
+        query = db.query(Especialidad).filter(Especialidad.descripcion == descripcion)
+        if exclude_id:
+            query = query.filter(Especialidad.id_especialidad != exclude_id)
+        return query.first() is not None
+
+    def get_especialidades_con_veterinarios_count(self, db: Session) -> List[Dict[str, Any]]:
+        """Obtener especialidades con conteo de veterinarios"""
+        from app.models.veterinario import Veterinario
+        
+        resultado = db.query(
+            Especialidad.id_especialidad,
+            Especialidad.descripcion,
+            func.count(Veterinario.id_veterinario).label('total_veterinarios'),
+            func.sum(
+                func.case(
+                    [(Veterinario.disposicion == 'Libre', 1)], 
+                    else_=0
+                )
+            ).label('veterinarios_disponibles')
+        ).outerjoin(Veterinario, Especialidad.id_especialidad == Veterinario.id_especialidad)\
+         .group_by(Especialidad.id_especialidad, Especialidad.descripcion)\
+         .order_by(Especialidad.descripcion).all()
+        
+        return [
+            {
+                "id_especialidad": r.id_especialidad,
+                "descripcion": r.descripcion,
+                "total_veterinarios": r.total_veterinarios or 0,
+                "veterinarios_disponibles": r.veterinarios_disponibles or 0
+            }
+            for r in resultado
+        ]
+
+    def get_mas_demandadas(self, db: Session, *, limit: int = 5) -> List[Dict[str, Any]]:
+        """Obtener especialidades más demandadas"""
+        from app.models.veterinario import Veterinario
+        from app.models.consulta import Consulta
+        
+        resultado = db.query(
+            Especialidad.descripcion,
+            func.count(Consulta.id_consulta).label('total_consultas')
+        ).join(Veterinario, Especialidad.id_especialidad == Veterinario.id_especialidad)\
+         .join(Consulta, Veterinario.id_veterinario == Consulta.id_veterinario)\
+         .group_by(Especialidad.id_especialidad, Especialidad.descripcion)\
+         .order_by(func.count(Consulta.id_consulta).desc())\
+         .limit(limit).all()
+        
+        return [
+            {
+                "especialidad": r.descripcion,
+                "total_consultas": r.total_consultas
+            }
+            for r in resultado
+        ]
+
+    def get_all_ordenadas(self, db: Session) -> List[Especialidad]:
+        """Obtener todas las especialidades ordenadas alfabéticamente"""
+        return db.query(Especialidad).order_by(Especialidad.descripcion).all()
+
+# ===== TIPO SERVICIO COMPLETO =====
 class CRUDTipoServicio(CRUDBase[TipoServicio, TipoServicioCreate, None]):
     
     def get_by_descripcion(self, db: Session, *, descripcion: str) -> Optional[TipoServicio]:
-        """Obtener tipo de servicio por descripción"""
-        return db.query(TipoServicio).filter(TipoServicio.descripcion.ilike(f"%{descripcion}%")).first()
+        """Obtener tipo de servicio por descripción exacta"""
+        return db.query(TipoServicio).filter(TipoServicio.descripcion == descripcion).first()
 
-# ===== SERVICIO =====
+    def exists_by_descripcion(self, db: Session, *, descripcion: str, exclude_id: Optional[int] = None) -> bool:
+        """Verificar si existe un tipo de servicio con esa descripción"""
+        query = db.query(TipoServicio).filter(TipoServicio.descripcion == descripcion)
+        if exclude_id:
+            query = query.filter(TipoServicio.id_tipo_servicio != exclude_id)
+        return query.first() is not None
+
+    def get_tipos_con_servicios_count(self, db: Session) -> List[Dict[str, Any]]:
+        """Obtener tipos de servicio con conteo de servicios"""
+        resultado = db.query(
+            TipoServicio.id_tipo_servicio,
+            TipoServicio.descripcion,
+            func.count(Servicio.id_servicio).label('total_servicios'),
+            func.sum(
+                func.case(
+                    [(Servicio.activo == True, 1)], 
+                    else_=0
+                )
+            ).label('servicios_activos')
+        ).outerjoin(Servicio, TipoServicio.id_tipo_servicio == Servicio.id_tipo_servicio)\
+         .group_by(TipoServicio.id_tipo_servicio, TipoServicio.descripcion)\
+         .order_by(TipoServicio.descripcion).all()
+        
+        return [
+            {
+                "id_tipo_servicio": r.id_tipo_servicio,
+                "descripcion": r.descripcion,
+                "total_servicios": r.total_servicios or 0,
+                "servicios_activos": r.servicios_activos or 0
+            }
+            for r in resultado
+        ]
+
+    def search_tipos(self, db: Session, *, descripcion: str) -> List[TipoServicio]:
+        """Buscar tipos de servicio por descripción"""
+        return db.query(TipoServicio).filter(TipoServicio.descripcion.ilike(f"%{descripcion}%"))\
+                                    .order_by(TipoServicio.descripcion).all()
+
+    def get_all_ordenados(self, db: Session) -> List[TipoServicio]:
+        """Obtener todos los tipos ordenados alfabéticamente"""
+        return db.query(TipoServicio).order_by(TipoServicio.descripcion).all()
+
+# ===== SERVICIO COMPLETO =====
 class CRUDServicio(CRUDBase[Servicio, ServicioCreate, ServicioUpdate]):
     
-    def get_by_tipo(self, db: Session, *, tipo_servicio_id: int) -> List[Servicio]:
+    def get_by_tipo(self, db: Session, *, tipo_servicio_id: int, solo_activos: bool = True) -> List[Servicio]:
         """Obtener servicios por tipo"""
-        return db.query(Servicio).filter(Servicio.id_tipo_servicio == tipo_servicio_id).all()
+        query = db.query(Servicio).filter(Servicio.id_tipo_servicio == tipo_servicio_id)
+        if solo_activos:
+            query = query.filter(Servicio.activo == True)
+        return query.order_by(Servicio.nombre_servicio).all()
 
     def get_activos(self, db: Session) -> List[Servicio]:
         """Obtener servicios activos"""
-        return db.query(Servicio).filter(Servicio.activo == True).all()
+        return db.query(Servicio).filter(Servicio.activo == True)\
+                                 .order_by(Servicio.nombre_servicio).all()
 
     def get_by_nombre(self, db: Session, *, nombre_servicio: str) -> Optional[Servicio]:
-        """Obtener servicio por nombre"""
-        return db.query(Servicio).filter(Servicio.nombre_servicio.ilike(f"%{nombre_servicio}%")).first()
+        """Obtener servicio por nombre exacto"""
+        return db.query(Servicio).filter(Servicio.nombre_servicio == nombre_servicio).first()
 
-    def search_servicios(self, db: Session, *, nombre: str = None, activo: bool = None) -> List[Servicio]:
-        """Buscar servicios"""
+    def search_servicios(self, db: Session, *, nombre: str = None, activo: bool = None, tipo_servicio_id: int = None) -> List[Servicio]:
+        """Buscar servicios con filtros"""
         query = db.query(Servicio)
         
         if nombre:
@@ -77,12 +284,15 @@ class CRUDServicio(CRUDBase[Servicio, ServicioCreate, ServicioUpdate]):
         
         if activo is not None:
             query = query.filter(Servicio.activo == activo)
+            
+        if tipo_servicio_id:
+            query = query.filter(Servicio.id_tipo_servicio == tipo_servicio_id)
         
-        return query.all()
+        return query.order_by(Servicio.nombre_servicio).all()
 
     def get_by_precio_range(self, db: Session, *, precio_min: float = None, precio_max: float = None) -> List[Servicio]:
         """Obtener servicios por rango de precio"""
-        query = db.query(Servicio)
+        query = db.query(Servicio).filter(Servicio.activo == True)
         
         if precio_min is not None:
             query = query.filter(Servicio.precio >= precio_min)
@@ -90,32 +300,126 @@ class CRUDServicio(CRUDBase[Servicio, ServicioCreate, ServicioUpdate]):
         if precio_max is not None:
             query = query.filter(Servicio.precio <= precio_max)
         
-        return query.all()
+        return query.order_by(Servicio.precio).all()
 
-# ===== PATOLOGÍA =====
+    def exists_by_nombre(self, db: Session, *, nombre_servicio: str, exclude_id: Optional[int] = None) -> bool:
+        """Verificar si existe un servicio con ese nombre"""
+        query = db.query(Servicio).filter(Servicio.nombre_servicio == nombre_servicio)
+        if exclude_id:
+            query = query.filter(Servicio.id_servicio != exclude_id)
+        return query.first() is not None
+
+    def get_with_tipo_info(self, db: Session, *, servicio_id: int) -> Optional[Dict[str, Any]]:
+        """Obtener servicio con información del tipo"""
+        resultado = db.query(
+            Servicio.id_servicio,
+            Servicio.nombre_servicio,
+            Servicio.precio,
+            Servicio.activo,
+            Servicio.id_tipo_servicio,
+            TipoServicio.descripcion.label('tipo_descripcion')
+        ).join(TipoServicio, Servicio.id_tipo_servicio == TipoServicio.id_tipo_servicio)\
+         .filter(Servicio.id_servicio == servicio_id).first()
+        
+        if resultado:
+            return {
+                "id_servicio": resultado.id_servicio,
+                "nombre_servicio": resultado.nombre_servicio,
+                "precio": float(resultado.precio),
+                "activo": resultado.activo,
+                "id_tipo_servicio": resultado.id_tipo_servicio,
+                "tipo_descripcion": resultado.tipo_descripcion
+            }
+        return None
+
+    def activate_service(self, db: Session, *, servicio_id: int) -> Optional[Servicio]:
+        """Activar servicio"""
+        servicio_obj = self.get(db, servicio_id)
+        if servicio_obj:
+            servicio_obj.activo = True
+            db.commit()
+            db.refresh(servicio_obj)
+        return servicio_obj
+
+    def deactivate_service(self, db: Session, *, servicio_id: int) -> Optional[Servicio]:
+        """Desactivar servicio"""
+        servicio_obj = self.get(db, servicio_id)
+        if servicio_obj:
+            servicio_obj.activo = False
+            db.commit()
+            db.refresh(servicio_obj)
+        return servicio_obj
+
+    def get_mas_solicitados(self, db: Session, *, limit: int = 10) -> List[Dict[str, Any]]:
+        """Obtener servicios más solicitados"""
+        from app.models.servicio_solicitado import ServicioSolicitado
+        
+        resultado = db.query(
+            Servicio.id_servicio,
+            Servicio.nombre_servicio,
+            Servicio.precio,
+            func.count(ServicioSolicitado.id_servicio_solicitado).label('total_solicitudes')
+        ).outerjoin(ServicioSolicitado, Servicio.id_servicio == ServicioSolicitado.id_servicio)\
+         .group_by(Servicio.id_servicio, Servicio.nombre_servicio, Servicio.precio)\
+         .order_by(func.count(ServicioSolicitado.id_servicio_solicitado).desc())\
+         .limit(limit).all()
+        
+        return [
+            {
+                "id_servicio": r.id_servicio,
+                "nombre_servicio": r.nombre_servicio,
+                "precio": float(r.precio),
+                "total_solicitudes": r.total_solicitudes or 0
+            }
+            for r in resultado
+        ]
+
+    def get_estadisticas_precios(self, db: Session) -> Dict[str, Any]:
+        """Obtener estadísticas de precios"""
+        resultado = db.query(
+            func.min(Servicio.precio).label('precio_minimo'),
+            func.max(Servicio.precio).label('precio_maximo'),
+            func.avg(Servicio.precio).label('precio_promedio'),
+            func.count(Servicio.id_servicio).label('total_servicios')
+        ).filter(Servicio.activo == True).first()
+        
+        return {
+            "precio_minimo": float(resultado.precio_minimo) if resultado.precio_minimo else 0,
+            "precio_maximo": float(resultado.precio_maximo) if resultado.precio_maximo else 0,
+            "precio_promedio": float(resultado.precio_promedio) if resultado.precio_promedio else 0,
+            "total_servicios": resultado.total_servicios or 0
+        }
+
+# ===== PATOLOGÍA COMPLETO =====
 class CRUDPatologia(CRUDBase[Patologia, PatologiaCreate, None]):
     
     def get_by_nombre(self, db: Session, *, nombre_patologia: str) -> Optional[Patologia]:
-        """Obtener patología por nombre"""
-        return db.query(Patologia).filter(Patologia.nombre_patologia.ilike(f"%{nombre_patologia}%")).first()
+        """Obtener patología por nombre exacto"""
+        return db.query(Patologia).filter(Patologia.nombre_patologia == nombre_patologia).first()
 
     def get_by_especie(self, db: Session, *, especie: str) -> List[Patologia]:
         """Obtener patologías por especie"""
         return db.query(Patologia).filter(
-            (Patologia.especie_afecta == especie) | (Patologia.especie_afecta == "Ambas")
-        ).all()
+            or_(
+                Patologia.especie_afecta == especie,
+                Patologia.especie_afecta == "Ambas"
+            )
+        ).order_by(Patologia.nombre_patologia).all()
 
     def get_by_gravedad(self, db: Session, *, gravedad: str) -> List[Patologia]:
         """Obtener patologías por gravedad"""
-        return db.query(Patologia).filter(Patologia.gravedad == gravedad).all()
+        return db.query(Patologia).filter(Patologia.gravedad == gravedad)\
+                                  .order_by(Patologia.nombre_patologia).all()
 
     def get_cronicas(self, db: Session) -> List[Patologia]:
         """Obtener patologías crónicas"""
-        return db.query(Patologia).filter(Patologia.es_crónica == True).all()
+        return db.query(Patologia).filter(Patologia.es_crónica == True)\
+                                  .order_by(Patologia.nombre_patologia).all()
 
     def get_contagiosas(self, db: Session) -> List[Patologia]:
         """Obtener patologías contagiosas"""
-        return db.query(Patologia).filter(Patologia.es_contagiosa == True).all()
+        return db.query(Patologia).filter(Patologia.es_contagiosa == True)\
+                                  .order_by(Patologia.nombre_patologia).all()
 
     def search_patologias(self, db: Session, *, nombre: str = None, especie: str = None, gravedad: str = None) -> List[Patologia]:
         """Buscar patologías con múltiples filtros"""
@@ -126,13 +430,95 @@ class CRUDPatologia(CRUDBase[Patologia, PatologiaCreate, None]):
         
         if especie:
             query = query.filter(
-                (Patologia.especie_afecta == especie) | (Patologia.especie_afecta == "Ambas")
+                or_(
+                    Patologia.especie_afecta == especie,
+                    Patologia.especie_afecta == "Ambas"
+                )
             )
         
         if gravedad:
             query = query.filter(Patologia.gravedad == gravedad)
         
-        return query.all()
+        return query.order_by(Patologia.nombre_patologia).all()
+
+    def exists_by_nombre(self, db: Session, *, nombre_patologia: str, exclude_id: Optional[int] = None) -> bool:
+        """Verificar si existe una patología con ese nombre"""
+        query = db.query(Patologia).filter(Patologia.nombre_patologia == nombre_patologia)
+        if exclude_id:
+            query = query.filter(Patologia.id_patología != exclude_id)
+        return query.first() is not None
+
+    def get_estadisticas(self, db: Session) -> Dict[str, Any]:
+        """Obtener estadísticas de patologías"""
+        total = db.query(Patologia).count()
+        
+        # Por especie
+        perros = db.query(Patologia).filter(
+            or_(
+                Patologia.especie_afecta == "Perro",
+                Patologia.especie_afecta == "Ambas"
+            )
+        ).count()
+        
+        gatos = db.query(Patologia).filter(
+            or_(
+                Patologia.especie_afecta == "Gato",
+                Patologia.especie_afecta == "Ambas"
+            )
+        ).count()
+        
+        # Por gravedad
+        por_gravedad = db.query(
+            Patologia.gravedad,
+            func.count(Patologia.id_patología).label('total')
+        ).group_by(Patologia.gravedad).all()
+        
+        # Características especiales
+        cronicas = db.query(Patologia).filter(Patologia.es_crónica == True).count()
+        contagiosas = db.query(Patologia).filter(Patologia.es_contagiosa == True).count()
+        
+        return {
+            "total_patologias": total,
+            "por_especie": {
+                "perros": perros,
+                "gatos": gatos,
+                "ambas": db.query(Patologia).filter(Patologia.especie_afecta == "Ambas").count()
+            },
+            "por_gravedad": {gravedad.gravedad: gravedad.total for gravedad in por_gravedad},
+            "caracteristicas": {
+                "cronicas": cronicas,
+                "contagiosas": contagiosas,
+                "agudas": total - cronicas
+            }
+        }
+
+    def get_mas_diagnosticadas(self, db: Session, *, limit: int = 10) -> List[Dict[str, Any]]:
+        """Obtener patologías más diagnosticadas"""
+        from app.models.diagnostico import Diagnostico
+        
+        resultado = db.query(
+            Patologia.id_patología,
+            Patologia.nombre_patologia,
+            Patologia.gravedad,
+            func.count(Diagnostico.id_diagnostico).label('total_diagnosticos')
+        ).outerjoin(Diagnostico, Patologia.id_patología == Diagnostico.id_patologia)\
+         .group_by(Patologia.id_patología, Patologia.nombre_patologia, Patologia.gravedad)\
+         .order_by(func.count(Diagnostico.id_diagnostico).desc())\
+         .limit(limit).all()
+        
+        return [
+            {
+                "id_patologia": r.id_patología,
+                "nombre_patologia": r.nombre_patologia,
+                "gravedad": r.gravedad,
+                "total_diagnosticos": r.total_diagnosticos or 0
+            }
+            for r in resultado
+        ]
+
+    def get_all_ordenadas(self, db: Session) -> List[Patologia]:
+        """Obtener todas las patologías ordenadas alfabéticamente"""
+        return db.query(Patologia).order_by(Patologia.nombre_patologia).all()
 
 # Instancias únicas
 raza = CRUDRaza(Raza)
