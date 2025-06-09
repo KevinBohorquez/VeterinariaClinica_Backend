@@ -15,7 +15,7 @@ from .veterinario_crud import veterinario
 from .recepcionista_crud import recepcionista
 
 # CRUD Catálogos (Usando los completos)
-from .catalogo_complete_crud import (
+from .catalogo_crud import (
     raza, tipo_animal, especialidad, 
     tipo_servicio, servicio, patologia
 )
@@ -36,9 +36,6 @@ from .historial_crud import historial_clinico
 
 # CRUD Solicitudes
 from .solicitud_crud import solicitud
-
-# CRUD Triaje
-from .triaje_crud import triaje
 
 # CRUD Dashboard
 from .dashboard_crud import dashboard
