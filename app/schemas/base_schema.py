@@ -1,49 +1,34 @@
 # app/schemas/base_schema.py
 from pydantic import BaseModel, validator
-from typing import Optional
-from datetime import datetime, date
+from typing import Optional, Any
 
 
 class BaseResponse(BaseModel):
-    """Schema base para responses"""
+    """Schema base para respuestas"""
+
     class Config:
         from_attributes = True
 
 
 class PaginationResponse(BaseModel):
-    """Schema para respuestas paginadas"""
+    """Schema base para respuestas paginadas"""
     total: int
     page: int
     per_page: int
     total_pages: int
 
+    class Config:
+        from_attributes = True
+
 
 class MessageResponse(BaseModel):
-    """Schema para mensajes simples"""
+    """Schema para mensajes de respuesta"""
     message: str
     success: bool = True
 
 
-class ErrorResponse(BaseModel):
-    """Schema para errores"""
-    detail: str
-    error_code: Optional[str] = None
-
-
-# Validators comunes
-def validate_dni(cls, v):
-    if v and (len(v) != 8 or not v.isdigit()):
-        raise ValueError('DNI debe tener exactamente 8 dígitos')
-    return v
-
-
-def validate_telefono(cls, v):
-    if v and (len(v) != 9 or not v.startswith('9')):
-        raise ValueError('Teléfono debe tener 9 dígitos y empezar con 9')
-    return v
-
-
-def validate_name(cls, v):
-    if v and len(v.strip()) < 2:
-        raise ValueError('Debe tener al menos 2 caracteres')
-    return v.strip().title() if v else v
+def validate_name(name: str) -> str:
+    """Validador reutilizable para nombres"""
+    if not name or len(name.strip()) < 2:
+        raise ValueError('El nombre debe tener al menos 2 caracteres')
+    return name.strip().title()

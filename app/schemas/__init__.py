@@ -11,7 +11,8 @@ from .clientes_schema import (
 
 from .mascota_schema import (
     MascotaCreate, MascotaUpdate, MascotaResponse, 
-    MascotaWithDetailsResponse, MascotaListResponse, MascotaSearch
+    MascotaSearch, MascotaClienteCreate, MascotaWithClienteResponse,
+    MascotaWithRazaResponse, MascotaCompleteResponse
 )
 
 from .veterinario_schema import (
