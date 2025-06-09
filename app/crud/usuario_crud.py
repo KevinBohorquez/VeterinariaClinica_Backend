@@ -1,4 +1,4 @@
-# app/crud/usuario_crud.py
+# app/crud/usuario_crud.pyAdd commentMore actions
 from sqlalchemy.orm import Session
 from sqlalchemy import and_, or_
 from typing import List, Optional, Tuple, Dict, Any
@@ -23,7 +23,8 @@ class CRUDUsuario(CRUDBase[Usuario, UsuarioCreate, UsuarioUpdate]):
             return usuario
         return None
 
-    def create_with_profile(self, db: Session, *, user_data: Dict[str, Any], profile_data: Dict[str, Any], user_type: str) -> Usuario:
+    def create_with_profile(self, db: Session, *, user_data: Dict[str, Any], profile_data: Dict[str, Any],
+                            user_type: str) -> Usuario:
         """Crear usuario con perfil específico"""
         # Crear usuario base
         usuario_dict = {
@@ -32,32 +33,32 @@ class CRUDUsuario(CRUDBase[Usuario, UsuarioCreate, UsuarioUpdate]):
             "tipo_usuario": user_type,
             "estado": user_data.get("estado", "Activo")
         }
-        
+
         usuario = Usuario(**usuario_dict)
         db.add(usuario)
         db.flush()  # Para obtener el ID sin commit
-        
+
         # Crear perfil específico según tipo
         try:
             if user_type == "Administrador":
                 profile_data["id_usuario"] = usuario.id_usuario
                 admin = Administrador(**profile_data)
                 db.add(admin)
-                
+
             elif user_type == "Veterinario":
                 profile_data["id_usuario"] = usuario.id_usuario
                 veterinario = Veterinario(**profile_data)
                 db.add(veterinario)
-                
+
             elif user_type == "Recepcionista":
                 profile_data["id_usuario"] = usuario.id_usuario
                 recepcionista = Recepcionista(**profile_data)
                 db.add(recepcionista)
-            
+
             db.commit()
             db.refresh(usuario)
             return usuario
-            
+
         except Exception as e:
             db.rollback()
             raise e
@@ -67,7 +68,7 @@ class CRUDUsuario(CRUDBase[Usuario, UsuarioCreate, UsuarioUpdate]):
         usuario = self.get(db, user_id)
         if not usuario:
             return None
-        
+
         profile = None
         if usuario.tipo_usuario == "Administrador":
             profile = db.query(Administrador).filter(Administrador.id_usuario == user_id).first()
@@ -75,7 +76,7 @@ class CRUDUsuario(CRUDBase[Usuario, UsuarioCreate, UsuarioUpdate]):
             profile = db.query(Veterinario).filter(Veterinario.id_usuario == user_id).first()
         elif usuario.tipo_usuario == "Recepcionista":
             profile = db.query(Recepcionista).filter(Recepcionista.id_usuario == user_id).first()
-        
+
         return {
             "usuario": usuario,
             "perfil": profile
@@ -84,31 +85,31 @@ class CRUDUsuario(CRUDBase[Usuario, UsuarioCreate, UsuarioUpdate]):
     def search_usuarios(self, db: Session, *, search_params: UsuarioSearch) -> Tuple[List[Usuario], int]:
         """Buscar usuarios con filtros múltiples"""
         query = db.query(Usuario)
-        
+
         # Aplicar filtros
         if search_params.username:
             query = query.filter(Usuario.username.ilike(f"%{search_params.username}%"))
-        
+
         if search_params.tipo_usuario:
             query = query.filter(Usuario.tipo_usuario == search_params.tipo_usuario)
-        
+
         if search_params.estado:
             query = query.filter(Usuario.estado == search_params.estado)
-        
+
         if search_params.fecha_desde:
             query = query.filter(Usuario.fecha_creacion >= search_params.fecha_desde)
-        
+
         if search_params.fecha_hasta:
             query = query.filter(Usuario.fecha_creacion <= search_params.fecha_hasta)
-        
+
         # Contar total
         total = query.count()
-        
+
         # Aplicar paginación y ordenamiento
-        usuarios = query.order_by(Usuario.fecha_creacion.desc())\
-                       .offset((search_params.page - 1) * search_params.per_page)\
-                       .limit(search_params.per_page).all()
-        
+        usuarios = query.order_by(Usuario.fecha_creacion.desc()) \
+            .offset((search_params.page - 1) * search_params.per_page) \
+            .limit(search_params.per_page).all()
+
         return usuarios, total
 
     def exists_by_username(self, db: Session, *, username: str, exclude_id: Optional[int] = None) -> bool:
@@ -155,7 +156,7 @@ class CRUDUsuario(CRUDBase[Usuario, UsuarioCreate, UsuarioUpdate]):
     def get_usuarios_con_perfiles(self, db: Session, *, skip: int = 0, limit: int = 100) -> List[Dict[str, Any]]:
         """Obtener usuarios con información de sus perfiles"""
         usuarios = db.query(Usuario).offset(skip).limit(limit).all()
-        
+
         result = []
         for usuario in usuarios:
             perfil_info = self.get_with_profile(db, user_id=usuario.id_usuario)
@@ -182,7 +183,7 @@ class CRUDUsuario(CRUDBase[Usuario, UsuarioCreate, UsuarioUpdate]):
                     "email": "Sin email",
                     "dni": "Sin DNI"
                 })
-        
+
         return result
 
     def get_estadisticas_usuarios(self, db: Session) -> Dict[str, Any]:
@@ -190,12 +191,12 @@ class CRUDUsuario(CRUDBase[Usuario, UsuarioCreate, UsuarioUpdate]):
         total_usuarios = db.query(Usuario).count()
         usuarios_activos = db.query(Usuario).filter(Usuario.estado == "Activo").count()
         usuarios_inactivos = total_usuarios - usuarios_activos
-        
+
         # Por tipo
         administradores = db.query(Usuario).filter(Usuario.tipo_usuario == "Administrador").count()
         veterinarios = db.query(Usuario).filter(Usuario.tipo_usuario == "Veterinario").count()
         recepcionistas = db.query(Usuario).filter(Usuario.tipo_usuario == "Recepcionista").count()
-        
+
         # Activos por tipo
         admin_activos = db.query(Usuario).filter(
             and_(Usuario.tipo_usuario == "Administrador", Usuario.estado == "Activo")
@@ -206,7 +207,7 @@ class CRUDUsuario(CRUDBase[Usuario, UsuarioCreate, UsuarioUpdate]):
         recep_activos = db.query(Usuario).filter(
             and_(Usuario.tipo_usuario == "Recepcionista", Usuario.estado == "Activo")
         ).count()
-        
+
         return {
             "total_usuarios": total_usuarios,
             "usuarios_activos": usuarios_activos,
@@ -236,7 +237,7 @@ class CRUDUsuario(CRUDBase[Usuario, UsuarioCreate, UsuarioUpdate]):
         usuario = self.get(db, user_id)
         if not usuario:
             return False
-        
+
         try:
             # El CASCADE en las FK debería eliminar el perfil automáticamente
             db.delete(usuario)
@@ -250,10 +251,10 @@ class CRUDUsuario(CRUDBase[Usuario, UsuarioCreate, UsuarioUpdate]):
         """Obtener usuarios creados recientemente"""
         from datetime import datetime, timedelta
         fecha_limite = datetime.now() - timedelta(days=dias)
-        
-        return db.query(Usuario).filter(Usuario.fecha_creacion >= fecha_limite)\
-                               .order_by(Usuario.fecha_creacion.desc())\
-                               .limit(limit).all()
+
+        return db.query(Usuario).filter(Usuario.fecha_creacion >= fecha_limite) \
+            .order_by(Usuario.fecha_creacion.desc()) \
+            .limit(limit).all()
 
 
 # Instancia única

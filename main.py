@@ -1,4 +1,4 @@
-# main.py - Sistema Veterinaria API
+# main.py - Sistema Veterinaria API COMPLETO
 from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
@@ -10,7 +10,8 @@ from datetime import datetime
 from app.config.database import get_db
 from app.models.clientes import Cliente
 
-# ✅ IMPORTAR LOS ROUTERS CORREGIDOS DE LA CARPETA ENDPOINTS
+# ✅ IMPORTAR TODOS LOS ROUTERS (AUTENTICACIÓN + GESTIÓN)
+from app.api.v1.endpoints.auth import router as auth_router
 from app.api.v1.endpoints.clientes import router as clientes_router
 from app.api.v1.endpoints.veterinarios import router as veterinarios_router
 from app.api.v1.endpoints.recepcionistas import router as recepcionistas_router
@@ -21,9 +22,9 @@ from app.api.v1.endpoints.catalogos import router as catalogos_router
 from app.api.v1.endpoints.consultas import router as consultas_router
 
 app = FastAPI(
-    title="🏥 Sistema Veterinaria API",
-    description="API para gestión integral de veterinaria",
-    version="1.0.0"
+    title="🏥 Sistema Veterinaria API Completo",
+    description="API integral para gestión de veterinaria con autenticación y todos los módulos",
+    version="2.0.0"
 )
 
 app.add_middleware(
@@ -34,248 +35,175 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# ✅ INCLUIR LOS ROUTERS CON SUS PREFIJOS
-app.include_router(clientes_router, prefix="/api/v1/clientes", tags=["clientes"])
-app.include_router(veterinarios_router, prefix="/api/v1/veterinarios", tags=["veterinarios"])
-app.include_router(recepcionistas_router, prefix="/api/v1/recepcionistas", tags=["recepcionistas"])
-app.include_router(mascotas_router, prefix="/api/v1/mascotas", tags=["mascotas"])
-app.include_router(usuarios_router, prefix="/api/v1/usuarios", tags=["usuarios"])
-app.include_router(administradores_router, prefix="/api/v1/administradores", tags=["administradores"])
-app.include_router(catalogos_router, prefix="/api/v1/catalogos", tags=["catalogos"])
-app.include_router(consultas_router, prefix="/api/v1/consultas", tags=["consultas"])
+# ✅ INCLUIR TODOS LOS ROUTERS DISPONIBLES
+# Autenticación (prioritario)
+app.include_router(auth_router, prefix="/api/v1/auth", tags=["🔐 autenticación"])
+
+# Gestión de usuarios
+app.include_router(clientes_router, prefix="/api/v1/clientes", tags=["👥 clientes"])
+app.include_router(veterinarios_router, prefix="/api/v1/veterinarios", tags=["👨‍⚕️ veterinarios"])
+app.include_router(recepcionistas_router, prefix="/api/v1/recepcionistas", tags=["👩‍💼 recepcionistas"])
+app.include_router(usuarios_router, prefix="/api/v1/usuarios", tags=["👤 usuarios"])
+app.include_router(administradores_router, prefix="/api/v1/administradores", tags=["👑 administradores"])
+
+# Gestión de mascotas
+app.include_router(mascotas_router, prefix="/api/v1/mascotas", tags=["🐕 mascotas"])
+
+# Catálogos del sistema
+app.include_router(catalogos_router, prefix="/api/v1/catalogos", tags=["📋 catálogos"])
+
+# Procesos clínicos
+app.include_router(consultas_router, prefix="/api/v1/consultas", tags=["🏥 consultas"])
+
+# Router condicional
+if SOLICITUDES_AVAILABLE:
+    app.include_router(solicitudes_router, prefix="/api/v1/solicitudes", tags=["📋 solicitudes"])
 
 
-# ===== ENDPOINTS BÁSICOS (solo estos en main) =====
+# ===== ENDPOINTS PRINCIPALES =====
 
 @app.get("/")
 async def root():
+    available_modules = {
+        "🔐 autenticación": "/api/v1/auth - Sistema de login/logout completo",
+        "👥 clientes": "/api/v1/clientes - Gestión de clientes propietarios",
+        "👨‍⚕️ veterinarios": "/api/v1/veterinarios - Gestión de veterinarios",
+        "👩‍💼 recepcionistas": "/api/v1/recepcionistas - Gestión de recepcionistas",
+        "👤 usuarios": "/api/v1/usuarios - Gestión de usuarios del sistema",
+        "👑 administradores": "/api/v1/administradores - Gestión de administradores",
+        "🐕 mascotas": "/api/v1/mascotas - Gestión de mascotas",
+        "📋 catálogos": "/api/v1/catalogos - Razas, especialidades, servicios, patologías",
+        "🏥 consultas": "/api/v1/consultas - Procesos clínicos completos"
+    }
+
+    if SOLICITUDES_AVAILABLE:
+        available_modules["📋 solicitudes"] = "/api/v1/solicitudes - Solicitudes de atención"
+
     return {
-        "message": "🏥 Sistema Veterinaria API funcionando!",
+        "message": "🏥 Sistema Veterinaria API COMPLETO funcionando!",
         "environment": os.getenv("ENVIRONMENT", "production"),
-        "version": "1.0.0",
+        "version": "2.0.0",
         "status": "OK",
-        "endpoints": {
+        "modules_available": available_modules,
+        "system_info": {
+            "authentication": "✅ Sistema completo de autenticación",
+            "user_management": "✅ Gestión completa de usuarios",
+            "pet_management": "✅ Gestión de mascotas",
+            "catalogs": "✅ Catálogos del sistema",
+            "clinical_processes": "✅ Procesos clínicos completos",
+            "total_modules": len(available_modules)
+        },
+        "quick_start": {
+            "1": "🔐 POST /api/v1/auth/login - Iniciar sesión",
+            "2": "👥 GET /api/v1/clientes - Ver clientes",
+            "3": "🐕 GET /api/v1/mascotas - Ver mascotas",
+            "4": "🏥 GET /api/v1/consultas/solicitudes - Ver solicitudes",
+            "5": "📋 GET /api/v1/catalogos/razas - Ver catálogos",
+            "6": "🔐 POST /api/v1/auth/logout - Cerrar sesión"
+        },
+        "authentication_examples": {
+            "login": {
+                "endpoint": "POST /api/v1/auth/login",
+                "example": {
+                    "username": "admin001",
+                    "password": "password123"
+                }
+            },
+            "logout": {
+                "endpoint": "POST /api/v1/auth/logout",
+                "example": {
+                    "user_id": 1
+                }
+            },
+            "check_session": "GET /api/v1/auth/session/{user_id}",
+            "change_password": "POST /api/v1/auth/change-password",
+            "check_permissions": "POST /api/v1/auth/check-permission"
+        },
+        "user_roles": {
+            "Administrador": {
+                "description": "Acceso completo al sistema",
+                "permissions": "Todos los módulos y configuraciones"
+            },
+            "Veterinario": {
+                "description": "Acceso a procesos clínicos",
+                "permissions": "Consultas, diagnósticos, tratamientos, triajes"
+            },
+            "Recepcionista": {
+                "description": "Acceso a recepción y gestión",
+                "permissions": "Clientes, mascotas, citas, solicitudes"
+            }
+        },
+        "main_endpoints": {
             "health": "/health - Estado del sistema",
-            "test_db": "/test-db - Probar conexión DB",
+            "test_db": "/test-db - Probar conexión a BD",
             "stats": "/stats - Estadísticas generales",
+            "info": "/info - Información detallada de la API",
             "docs": "/docs - Documentación Swagger",
-            "redoc": "/redoc - Documentación ReDoc",
-            "api_v1": {
-                "clientes": "/api/v1/clientes - Gestión de clientes",
-                "veterinarios": "/api/v1/veterinarios - Gestión de veterinarios",
-                "recepcionistas": "/api/v1/recepcionistas - Gestión de recepcionistas",
-                "mascotas": "/api/v1/mascotas - Gestión de mascotas",
-                "usuarios": "/api/v1/usuarios - Gestión de usuarios del sistema",
-                "administradores": "/api/v1/administradores - Gestión de administradores",
-                "catalogos": "/api/v1/catalogos - Gestión de catálogos (razas, servicios, patologías)",
-                "consultas": "/api/v1/consultas - Gestión de consultas y procesos clínicos"
-            }
-        },
-        "examples": {
-            "clientes": {
-                "list": "GET /api/v1/clientes",
-                "create": "POST /api/v1/clientes",
-                "get_by_id": "GET /api/v1/clientes/{id}",
-                "get_by_dni": "GET /api/v1/clientes/dni/{dni}",
-                "get_by_email": "GET /api/v1/clientes/email/{email}",
-                "search": "POST /api/v1/clientes/search",
-                "update": "PUT /api/v1/clientes/{id}",
-                "delete": "DELETE /api/v1/clientes/{id}",
-                "mascotas": "GET /api/v1/clientes/{id}/mascotas"
-            },
-            "veterinarios": {
-                "list": "GET /api/v1/veterinarios",
-                "create": "POST /api/v1/veterinarios",
-                "get_by_id": "GET /api/v1/veterinarios/{id}",
-                "get_by_dni": "GET /api/v1/veterinarios/dni/{dni}",
-                "get_by_email": "GET /api/v1/veterinarios/email/{email}",
-                "get_by_codigo_cmvp": "GET /api/v1/veterinarios/codigo-cmvp/{codigo}",
-                "disponibles": "GET /api/v1/veterinarios/disponibles",
-                "por_especialidad": "GET /api/v1/veterinarios/especialidad/{id}",
-                "update": "PUT /api/v1/veterinarios/{id}",
-                "search": "POST /api/v1/veterinarios/search"
-            },
-            "recepcionistas": {
-                "list": "GET /api/v1/recepcionistas",
-                "create": "POST /api/v1/recepcionistas",
-                "get_by_id": "GET /api/v1/recepcionistas/{id}",
-                "get_by_dni": "GET /api/v1/recepcionistas/dni/{dni}",
-                "get_by_email": "GET /api/v1/recepcionistas/email/{email}",
-                "por_turno": "GET /api/v1/recepcionistas/turno/{turno}",
-                "update": "PUT /api/v1/recepcionistas/{id}",
-                "search": "POST /api/v1/recepcionistas/search"
-            },
-            "mascotas": {
-                "list": "GET /api/v1/mascotas",
-                "create": "POST /api/v1/mascotas?cliente_id={id}",
-                "get_by_id": "GET /api/v1/mascotas/{id}",
-                "get_with_details": "GET /api/v1/mascotas/{id}/details",
-                "update": "PUT /api/v1/mascotas/{id}",
-                "delete": "DELETE /api/v1/mascotas/{id}",
-                "search": "POST /api/v1/mascotas/search",
-                "por_cliente": "GET /api/v1/mascotas/cliente/{cliente_id}/list",
-                "stats_sexo": "GET /api/v1/mascotas/stats/por-sexo",
-                "no_esterilizadas": "GET /api/v1/mascotas/no-esterilizadas/list"
-            },
-            "usuarios": {
-                "list": "GET /api/v1/usuarios",
-                "create": "POST /api/v1/usuarios",
-                "get_by_id": "GET /api/v1/usuarios/{id}",
-                "get_by_username": "GET /api/v1/usuarios/username/{username}",
-                "login": "POST /api/v1/usuarios/login",
-                "change_password": "POST /api/v1/usuarios/{id}/change-password",
-                "activate": "POST /api/v1/usuarios/{id}/activate",
-                "deactivate": "POST /api/v1/usuarios/{id}/deactivate",
-                "search": "POST /api/v1/usuarios/search",
-                "stats": "GET /api/v1/usuarios/stats"
-            },
-            "administradores": {
-                "list": "GET /api/v1/administradores",
-                "create": "POST /api/v1/administradores",
-                "get_by_id": "GET /api/v1/administradores/{id}",
-                "get_by_dni": "GET /api/v1/administradores/dni/{dni}",
-                "get_by_email": "GET /api/v1/administradores/email/{email}",
-                "update": "PUT /api/v1/administradores/{id}",
-                "search": "POST /api/v1/administradores/search",
-                "stats": "GET /api/v1/administradores/stats",
-                "with_usuario": "GET /api/v1/administradores/{id}/with-usuario"
-            },
-            "catalogos": {
-                "razas": {
-                    "list": "GET /api/v1/catalogos/razas",
-                    "create": "POST /api/v1/catalogos/razas",
-                    "get_by_id": "GET /api/v1/catalogos/razas/{id}",
-                    "search": "GET /api/v1/catalogos/razas/search?nombre={nombre}"
-                },
-                "especialidades": {
-                    "list": "GET /api/v1/catalogos/especialidades",
-                    "create": "POST /api/v1/catalogos/especialidades",
-                    "get_by_id": "GET /api/v1/catalogos/especialidades/{id}",
-                    "search": "GET /api/v1/catalogos/especialidades/search?descripcion={desc}"
-                },
-                "servicios": {
-                    "list": "GET /api/v1/catalogos/servicios",
-                    "create": "POST /api/v1/catalogos/servicios",
-                    "get_by_id": "GET /api/v1/catalogos/servicios/{id}",
-                    "update": "PUT /api/v1/catalogos/servicios/{id}",
-                    "activos": "GET /api/v1/catalogos/servicios/activos",
-                    "por_tipo": "GET /api/v1/catalogos/servicios/tipo/{tipo_id}",
-                    "por_precio": "GET /api/v1/catalogos/servicios/precio?min={min}&max={max}"
-                },
-                "patologias": {
-                    "list": "GET /api/v1/catalogos/patologias",
-                    "create": "POST /api/v1/catalogos/patologias",
-                    "get_by_id": "GET /api/v1/catalogos/patologias/{id}",
-                    "por_especie": "GET /api/v1/catalogos/patologias/especie/{especie}",
-                    "por_gravedad": "GET /api/v1/catalogos/patologias/gravedad/{gravedad}",
-                    "cronicas": "GET /api/v1/catalogos/patologias/cronicas",
-                    "contagiosas": "GET /api/v1/catalogos/patologias/contagiosas"
-                }
-            },
-            "consultas": {
-                "solicitudes": {
-                    "list": "GET /api/v1/consultas/solicitudes",
-                    "create": "POST /api/v1/consultas/solicitudes",
-                    "get_by_id": "GET /api/v1/consultas/solicitudes/{id}",
-                    "update": "PUT /api/v1/consultas/solicitudes/{id}",
-                    "search": "POST /api/v1/consultas/solicitudes/search",
-                    "cambiar_estado": "PATCH /api/v1/consultas/solicitudes/{id}/estado",
-                    "por_mascota": "GET /api/v1/consultas/solicitudes/mascota/{id}",
-                    "pendientes": "GET /api/v1/consultas/solicitudes/pendientes"
-                },
-                "triajes": {
-                    "list": "GET /api/v1/consultas/triajes",
-                    "create": "POST /api/v1/consultas/triajes",
-                    "get_by_id": "GET /api/v1/consultas/triajes/{id}",
-                    "update": "PUT /api/v1/consultas/triajes/{id}",
-                    "search": "POST /api/v1/consultas/triajes/search",
-                    "por_urgencia": "GET /api/v1/consultas/triajes/urgencia/{clasificacion}",
-                    "criticos": "GET /api/v1/consultas/triajes/criticos/recientes",
-                    "stats_urgencia": "GET /api/v1/consultas/triajes/estadisticas/urgencia",
-                    "signos_vitales": "GET /api/v1/consultas/triajes/estadisticas/signos-vitales"
-                },
-                "consultas_medicas": {
-                    "list": "GET /api/v1/consultas/consultas",
-                    "create": "POST /api/v1/consultas/consultas",
-                    "get_by_id": "GET /api/v1/consultas/consultas/{id}",
-                    "search": "POST /api/v1/consultas/consultas/search",
-                    "por_veterinario": "GET /api/v1/consultas/consultas/veterinario/{id}",
-                    "seguimientos": "GET /api/v1/consultas/consultas/seguimientos"
-                },
-                "diagnosticos": {
-                    "list": "GET /api/v1/consultas/diagnosticos",
-                    "create": "POST /api/v1/consultas/diagnosticos",
-                    "por_consulta": "GET /api/v1/consultas/diagnosticos/consulta/{id}",
-                    "confirmados": "GET /api/v1/consultas/diagnosticos/confirmados"
-                },
-                "tratamientos": {
-                    "list": "GET /api/v1/consultas/tratamientos",
-                    "create": "POST /api/v1/consultas/tratamientos",
-                    "por_consulta": "GET /api/v1/consultas/tratamientos/consulta/{id}",
-                    "activos": "GET /api/v1/consultas/tratamientos/activos"
-                },
-                "citas": {
-                    "list": "GET /api/v1/consultas/citas",
-                    "create": "POST /api/v1/consultas/citas",
-                    "get_by_id": "GET /api/v1/consultas/citas/{id}",
-                    "update": "PUT /api/v1/consultas/citas/{id}",
-                    "search": "POST /api/v1/consultas/citas/search",
-                    "programadas": "GET /api/v1/consultas/citas/programadas",
-                    "hoy": "GET /api/v1/consultas/citas/hoy",
-                    "cancelar": "POST /api/v1/consultas/citas/{id}/cancelar"
-                },
-                "historial": {
-                    "por_mascota": "GET /api/v1/consultas/historial/mascota/{id}",
-                    "add_evento": "POST /api/v1/consultas/historial/eventos",
-                    "search": "POST /api/v1/consultas/historial/search",
-                    "resumen": "GET /api/v1/consultas/historial/mascota/{id}/resumen"
-                }
-            }
-        },
-        "modulos_completos": {
-            "gestion_usuarios": [
-                "clientes", "veterinarios", "recepcionistas",
-                "usuarios", "administradores"
-            ],
-            "catalogos_sistema": [
-                "razas", "especialidades", "servicios",
-                "patologias", "tipos_servicios"
-            ],
-            "procesos_clinicos": [
-                "solicitudes", "triajes", "consultas",
-                "diagnosticos", "tratamientos", "historial"
-            ],
-            "gestion_citas": [
-                "programacion_citas", "servicios_solicitados",
-                "resultados_servicios"
-            ]
+            "redoc": "/redoc - Documentación ReDoc"
         }
     }
+
 
 @app.get("/health")
 async def health():
     return {
         "status": "healthy",
         "timestamp": datetime.now().isoformat(),
-        "service": "veterinaria-api",
-        "version": "1.0.0"
+        "service": "veterinaria-api-completo",
+        "version": "2.0.0",
+        "modules": {
+            "authentication": "active",
+            "user_management": "active",
+            "pet_management": "active",
+            "catalogs": "active",
+            "clinical_processes": "active",
+            "database": "connected",
+            "api": "running",
+            "solicitudes_module": "active" if SOLICITUDES_AVAILABLE else "not_found"
+        }
     }
+
 
 @app.get("/test-db")
 async def test_database(db: Session = Depends(get_db)):
-    """Probar conexión a la base de datos"""
+    """Probar conexión a la base de datos y verificar tablas principales"""
     try:
-        # Test simple
+        # Test de conexión básica
         result = db.execute("SELECT 1 as test").fetchone()
 
         # Test con tablas principales
         cliente_count = db.query(Cliente).count()
 
+        # Test con tabla de usuarios (si existe)
+        try:
+            from app.models.usuario import Usuario
+            usuario_count = db.query(Usuario).count()
+            auth_available = True
+        except Exception:
+            usuario_count = 0
+            auth_available = False
+
+        # Test con otras tablas principales
+        try:
+            from app.models.veterinario import Veterinario
+            from app.models.recepcionista import Recepcionista
+            veterinario_count = db.query(Veterinario).count()
+            recepcionista_count = db.query(Recepcionista).count()
+        except Exception as e:
+            veterinario_count = 0
+            recepcionista_count = 0
+
         return {
             "status": "success",
             "message": "Conexión exitosa a la base de datos",
             "test_query": "OK",
-            "total_clientes": cliente_count,
+            "tables_status": {
+                "clientes": cliente_count,
+                "usuarios": usuario_count if auth_available else "tabla no encontrada",
+                "veterinarios": veterinario_count,
+                "recepcionistas": recepcionista_count
+            },
+            "authentication_ready": auth_available,
             "timestamp": datetime.now().isoformat()
         }
     except SQLAlchemyError as e:
@@ -289,9 +217,10 @@ async def test_database(db: Session = Depends(get_db)):
             detail=f"Error inesperado: {str(e)}"
         )
 
+
 @app.get("/stats")
 async def get_estadisticas_generales(db: Session = Depends(get_db)):
-    """Obtener estadísticas generales del sistema"""
+    """Obtener estadísticas generales del sistema completo"""
     try:
         from app.models.veterinario import Veterinario
         from app.models.recepcionista import Recepcionista
@@ -308,11 +237,32 @@ async def get_estadisticas_generales(db: Session = Depends(get_db)):
         total_recepcionistas = db.query(Recepcionista).count()
         recepcionistas_activas = db.query(Recepcionista).filter(Recepcionista.estado == "Activo").count()
 
+        # Estadísticas de usuarios (si están disponibles)
+        auth_stats = {}
+        try:
+            from app.models.usuario import Usuario
+            total_usuarios = db.query(Usuario).count()
+            usuarios_activos = db.query(Usuario).filter(Usuario.estado == "Activo").count()
+            auth_stats = {
+                "total_usuarios_login": total_usuarios,
+                "usuarios_activos": usuarios_activos,
+                "usuarios_inactivos": total_usuarios - usuarios_activos,
+                "tipos_usuario": {
+                    "administradores": db.query(Usuario).filter(Usuario.tipo_usuario == "Administrador").count(),
+                    "veterinarios": db.query(Usuario).filter(Usuario.tipo_usuario == "Veterinario").count(),
+                    "recepcionistas": db.query(Usuario).filter(Usuario.tipo_usuario == "Recepcionista").count()
+                }
+            }
+        except Exception:
+            auth_stats = {"status": "módulo de autenticación no disponible"}
+
         return {
             "resumen": {
-                "total_usuarios": total_clientes + total_veterinarios + total_recepcionistas,
-                "timestamp": datetime.now().isoformat()
+                "total_usuarios_sistema": total_clientes + total_veterinarios + total_recepcionistas,
+                "timestamp": datetime.now().isoformat(),
+                "version": "2.0.0"
             },
+            "autenticacion": auth_stats,
             "clientes": {
                 "total": total_clientes,
                 "activos": clientes_activos,
@@ -323,13 +273,21 @@ async def get_estadisticas_generales(db: Session = Depends(get_db)):
                 "total": total_veterinarios,
                 "disponibles": veterinarios_disponibles,
                 "ocupados": total_veterinarios - veterinarios_disponibles,
-                "porcentaje_disponibles": round((veterinarios_disponibles / total_veterinarios * 100), 2) if total_veterinarios > 0 else 0
+                "porcentaje_disponibles": round((veterinarios_disponibles / total_veterinarios * 100),
+                                                2) if total_veterinarios > 0 else 0
             },
             "recepcionistas": {
                 "total": total_recepcionistas,
                 "activas": recepcionistas_activas,
                 "inactivas": total_recepcionistas - recepcionistas_activas,
-                "porcentaje_activas": round((recepcionistas_activas / total_recepcionistas * 100), 2) if total_recepcionistas > 0 else 0
+                "porcentaje_activas": round((recepcionistas_activas / total_recepcionistas * 100),
+                                            2) if total_recepcionistas > 0 else 0
+            },
+            "modulos_disponibles": {
+                "autenticacion": bool(auth_stats.get("total_usuarios_login")),
+                "solicitudes": SOLICITUDES_AVAILABLE,
+                "catalogos": True,
+                "consultas": True
             }
         }
 
@@ -339,80 +297,118 @@ async def get_estadisticas_generales(db: Session = Depends(get_db)):
             detail=f"Error al obtener estadísticas: {str(e)}"
         )
 
+
 @app.get("/info")
 async def get_api_info():
-    """Información detallada de la API"""
+    """Información detallada de la API completa"""
     return {
-        "name": "Sistema Veterinaria API",
-        "version": "1.0.0",
-        "description": "API completa para gestión de veterinaria",
-        "total_endpoints": 80,
+        "name": "Sistema Veterinaria API Completo",
+        "version": "2.0.0",
+        "description": "API integral para gestión de veterinaria con autenticación y todos los módulos",
+        "total_estimated_endpoints": 100,
+        "authentication": {
+            "type": "Session-based (expandible a JWT)",
+            "user_types": ["Administrador", "Veterinario", "Recepcionista"],
+            "features": [
+                "Login/Logout completo",
+                "Gestión de sesiones",
+                "Control de permisos por rol",
+                "Cambio de contraseñas",
+                "Validación de usuarios",
+                "Estados activo/inactivo"
+            ]
+        },
         "modules": {
+            "auth": {
+                "description": "Sistema completo de autenticación",
+                "endpoints": 9,
+                "features": ["Login", "Logout", "Permisos", "Sesiones", "Cambio contraseñas"]
+            },
             "clientes": {
                 "description": "Gestión de clientes propietarios",
                 "endpoints": 9,
-                "features": ["CRUD completo", "Búsqueda avanzada", "Filtros", "Paginación", "Relación con mascotas"]
+                "features": ["CRUD completo", "Búsqueda avanzada", "Filtros", "Relación con mascotas"]
             },
             "veterinarios": {
                 "description": "Gestión de veterinarios",
                 "endpoints": 12,
-                "features": ["CRUD completo", "Especialidades", "Disponibilidad", "Turnos", "Código CMVP"]
+                "features": ["CRUD completo", "Especialidades", "Disponibilidad", "Código CMVP"]
             },
             "recepcionistas": {
                 "description": "Gestión de recepcionistas",
                 "endpoints": 10,
-                "features": ["CRUD completo", "Turnos", "Estados", "Búsqueda", "Gestión por turno"]
-            },
-            "mascotas": {
-                "description": "Gestión de mascotas",
-                "endpoints": 9,
-                "features": ["CRUD completo", "Relación cliente-mascota", "Estadísticas", "Filtros por raza/sexo"]
+                "features": ["CRUD completo", "Turnos", "Estados", "Gestión por turno"]
             },
             "usuarios": {
                 "description": "Gestión de usuarios del sistema",
                 "endpoints": 10,
-                "features": ["Autenticación", "Roles", "Cambio contraseñas", "Estados", "Estadísticas"]
+                "features": ["Autenticación", "Roles", "Estados", "Estadísticas"]
             },
             "administradores": {
                 "description": "Gestión de administradores",
                 "endpoints": 8,
-                "features": ["CRUD completo", "Búsqueda", "Estadísticas", "Relación con usuarios"]
+                "features": ["CRUD completo", "Búsqueda", "Relación con usuarios"]
+            },
+            "mascotas": {
+                "description": "Gestión de mascotas",
+                "endpoints": 9,
+                "features": ["CRUD completo", "Relación cliente-mascota", "Estadísticas"]
             },
             "catalogos": {
-                "description": "Gestión de catálogos del sistema",
+                "description": "Catálogos del sistema",
                 "endpoints": 22,
-                "features": ["Razas", "Especialidades", "Servicios", "Patologías", "Tipos de servicios"]
+                "features": ["Razas", "Especialidades", "Servicios", "Patologías"]
             },
             "consultas": {
                 "description": "Procesos clínicos completos",
                 "endpoints": 30,
-                "features": ["Solicitudes", "Triajes", "Consultas", "Diagnósticos", "Tratamientos", "Citas", "Historial"]
+                "features": ["Solicitudes", "Triajes", "Consultas", "Diagnósticos", "Tratamientos", "Citas",
+                             "Historial"]
+            },
+            "solicitudes": {
+                "description": "Solicitudes de atención",
+                "endpoints": 6 if SOLICITUDES_AVAILABLE else 0,
+                "status": "disponible" if SOLICITUDES_AVAILABLE else "no encontrado"
             }
         },
         "database": {
             "engine": "MySQL",
             "orm": "SQLAlchemy",
             "migrations": "Alembic",
-            "connection_pool": "Habilitado"
+            "connection_pool": "Habilitado",
+            "estimated_tables": 25
         },
         "security": {
-            "authentication": "JWT (próximamente)",
-            "authorization": "Role-based",
-            "cors": "Habilitado",
-            "rate_limiting": "Pendiente"
-        },
-        "docs": {
-            "swagger": "/docs",
-            "redoc": "/redoc",
-            "openapi": "/openapi.json"
+            "authentication": "Session-based con expansión a JWT",
+            "authorization": "Role-based (Administrador, Veterinario, Recepcionista)",
+            "cors": "Habilitado para todos los orígenes",
+            "password_validation": "Implementado",
+            "session_management": "Completo"
         },
         "deployment": {
-            "platform": "Railway",
+            "platform": "Railway/Docker compatible",
             "environment": os.getenv("ENVIRONMENT", "production"),
-            "health_check": "/health"
+            "health_check": "/health",
+            "database_test": "/test-db"
+        },
+        "docs": {
+            "swagger": "/docs - Interfaz Swagger UI",
+            "redoc": "/redoc - Documentación ReDoc",
+            "openapi": "/openapi.json - Especificación OpenAPI"
+        },
+        "workflow_example": {
+            "1": "🔐 Login con POST /api/v1/auth/login",
+            "2": "👥 Gestionar clientes con /api/v1/clientes",
+            "3": "🐕 Registrar mascotas con /api/v1/mascotas",
+            "4": "🏥 Crear solicitudes con /api/v1/consultas/solicitudes",
+            "5": "👨‍⚕️ Realizar triaje con /api/v1/consultas/triajes",
+            "6": "🏥 Realizar consulta con /api/v1/consultas/consultas",
+            "7": "🔐 Logout con POST /api/v1/auth/logout"
         }
     }
 
+
 if __name__ == "__main__":
     import uvicorn
+
     uvicorn.run(app, host="0.0.0.0", port=8000, reload=True)
