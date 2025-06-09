@@ -162,3 +162,30 @@ class PatologiaResponse(BaseResponse):
     gravedad: str
     es_crónica: Optional[bool]
     es_contagiosa: Optional[bool]
+
+
+# ===== CLIENTE_MASCOTA =====
+
+class ClienteMascotaCreate(BaseModel):
+    """Schema para crear relación cliente-mascota"""
+    id_cliente: int
+    id_mascota: int
+
+    @validator('id_cliente')
+    def validate_id_cliente(cls, v):
+        if v <= 0:
+            raise ValueError('ID del cliente debe ser mayor a 0')
+        return v
+
+    @validator('id_mascota')
+    def validate_id_mascota(cls, v):
+        if v <= 0:
+            raise ValueError('ID de la mascota debe ser mayor a 0')
+        return v
+
+
+class ClienteMascotaResponse(BaseResponse):
+    """Schema para devolver información de relación cliente-mascota"""
+    id_cliente_mascota: int
+    id_cliente: int
+    id_mascota: int

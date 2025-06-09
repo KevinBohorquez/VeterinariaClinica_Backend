@@ -17,22 +17,15 @@ from .recepcionista_crud import recepcionista
 # CRUD Catálogos (Usando los completos)
 from .catalogo_crud import (
     raza, tipo_animal, especialidad, 
-    tipo_servicio, servicio, patologia
+    tipo_servicio, servicio, patologia, cliente_mascota
 )
 
 # CRUD Procesos Clínicos
 from .consulta_crud import (
     solicitud_atencion, triaje, consulta,
-    diagnostico, tratamiento
+    diagnostico, tratamiento, cita, servicio_solicitado,
+    resultado_servicio, historial_clinico
 )
-
-# CRUD Servicios y Citas
-from .cita_crud import (
-    servicio_solicitado, cita, resultado_servicio
-)
-
-# CRUD Historial
-from .historial_crud import historial_clinico
 
 # CRUD Dashboard
 from .dashboard_crud import dashboard
@@ -59,6 +52,7 @@ __all__ = [
     "tipo_servicio",
     "servicio",
     "patologia",
+    "cliente_mascota",
     
     # Procesos Clínicos
     "solicitud_atencion",
@@ -66,12 +60,11 @@ __all__ = [
     "consulta",
     "diagnostico",
     "tratamiento",
-    "historial_clinico",
-    
-    # Servicios y Citas
-    "servicio_solicitado",
     "cita",
+    "servicio_solicitado",
     "resultado_servicio",
+    "historial_clinico",
+
     
     # Otros
     "dashboard"
