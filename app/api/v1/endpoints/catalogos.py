@@ -767,6 +767,59 @@ async def get_servicios_estadisticas_precios(db: Session = Depends(get_db)):
         )
 
 
+@router.delete("/servicios/{servicio_id}", response_model=MessageResponse)
+async def delete_servicio(
+        servicio_id: int,
+        db: Session = Depends(get_db)
+):
+    """Eliminar un servicio permanentemente"""
+    try:
+        servicio_obj = servicio.get(db, servicio_id)
+        if not servicio_obj:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Servicio no encontrado"
+            )
+
+        # Verificar si el servicio está siendo usado
+        try:
+            from app.models.servicio_solicitado import ServicioSolicitado
+            servicios_solicitados = db.query(ServicioSolicitado).filter(
+                ServicioSolicitado.id_servicio == servicio_id
+            ).count()
+
+            if servicios_solicitados > 0:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"No se puede eliminar el servicio. Está siendo usado en {servicios_solicitados} solicitud(es). Considere desactivarlo en su lugar."
+                )
+        except ImportError:
+            # Si no existe el modelo ServicioSolicitado, continuar con la eliminación
+            pass
+
+        # Eliminar el servicio
+        success = servicio.remove(db, id=servicio_id)
+        if not success:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Error al eliminar el servicio"
+            )
+
+        return {
+            "message": f"Servicio '{servicio_obj.nombre_servicio}' eliminado exitosamente",
+            "success": True
+        }
+
+    except HTTPException as http_ex:
+        # Re-raise HTTP exceptions para que FastAPI las maneje correctamente
+        raise http_ex
+    except Exception as e:
+        # Para otros errores, crear una HTTPException
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error al eliminar servicio: {str(e)}"
+        )
+
 # ===== ENDPOINTS PARA PATOLOGÍA =====
 
 @router.post("/patologias/", response_model=PatologiaResponse, status_code=status.HTTP_201_CREATED)
