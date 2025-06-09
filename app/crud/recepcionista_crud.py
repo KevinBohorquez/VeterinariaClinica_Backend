@@ -1,4 +1,4 @@
-# app/crud/recepcionistas_crud.py
+# app/crud/recepcionista_crud.py
 from sqlalchemy.orm import Session
 from sqlalchemy import and_, or_
 from typing import List, Optional, Tuple

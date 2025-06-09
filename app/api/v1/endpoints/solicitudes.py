@@ -35,7 +35,7 @@ async def create_solicitud(
             )
 
         # Verificar que la recepcionista existe
-        from app.crud.recepcionistas_crud import recepcionista
+        from app.crud.recepcionista_crud import recepcionista
         recepcionista_obj = recepcionista.get(db, solicitud_data.id_recepcionista)
         if not recepcionista_obj:
             raise HTTPException(
