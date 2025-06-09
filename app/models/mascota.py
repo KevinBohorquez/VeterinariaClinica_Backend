@@ -7,7 +7,6 @@ class Mascota(Base):
     __tablename__ = "Mascota"
 
     id_mascota = Column(Integer, primary_key=True, autoincrement=True)
-    id_cliente = Column(Integer, ForeignKey('Cliente.id_cliente'), nullable=False)
     id_raza = Column(Integer, ForeignKey('Raza.id_raza'), nullable=False)
     
     nombre = Column(String(50), nullable=False)

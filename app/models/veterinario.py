@@ -21,7 +21,6 @@ class Veterinario(Base):
     dni = Column(CHAR(8), unique=True, nullable=False)
     telefono = Column(CHAR(9), nullable=False)
     email = Column(String(100), unique=True, nullable=False)
-    estado = Column(SQLEnum('Activo', 'Inactivo', name='estado_veterinario_enum'), default='Activo')
     fecha_ingreso = Column(Date, nullable=False)
     disposicion = Column(SQLEnum('Ocupado', 'Libre', name='disposicion_enum'), default='Libre')
     turno = Column(SQLEnum('Mañana', 'Tarde', 'Noche', name='turno_enum'), nullable=False)
