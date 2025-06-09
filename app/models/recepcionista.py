@@ -17,7 +17,6 @@ class Recepcionista(Base):
     email = Column(String(100), unique=True, nullable=False)
     fecha_ingreso = Column(Date)
     turno = Column(SQLEnum('Mañana', 'Tarde', 'Noche', name='turno_recepcionista_enum'))
-    estado = Column(SQLEnum('Activo', 'Inactivo', name='estado_recepcionista_enum'))
     genero = Column(CHAR(1), nullable=False)
 
     usuario = relationship("Usuario", back_populates="recepcionista")

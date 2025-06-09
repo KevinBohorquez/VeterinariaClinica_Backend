@@ -30,9 +30,9 @@ app.add_middleware(
 )
 
 # ✅ INCLUIR LOS ROUTERS CON SUS PREFIJOS
-app.include_router(clientes_router, prefix="/clientes", tags=["clientes"])
-app.include_router(veterinarios_router, prefix="/veterinarios", tags=["veterinarios"])
-app.include_router(recepcionistas_router, prefix="/recepcionistas", tags=["recepcionistas"])
+app.include_router(clientes_router, prefix="/api/v1/clientes", tags=["clientes"])
+app.include_router(veterinarios_router, prefix="/api/v1/veterinarios", tags=["veterinarios"])
+app.include_router(recepcionistas_router, prefix="/api/v1/recepcionistas", tags=["recepcionistas"])
 
 # ===== ENDPOINTS BÁSICOS (solo estos en main) =====
 
