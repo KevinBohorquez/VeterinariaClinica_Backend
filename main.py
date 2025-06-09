@@ -114,12 +114,17 @@ async def form_cliente():
         <title>Agregar Cliente</title>
         <style>
             body { font-family: Arial; max-width: 600px; margin: 50px auto; padding: 20px; }
-            input, select { width: 100%; padding: 10px; margin: 5px 0 15px 0; }
-            button { background: #007bff; color: white; padding: 12px 24px; border: none; cursor: pointer; }
+            input, select { width: 100%; padding: 10px; margin: 5px 0 15px 0; box-sizing: border-box; }
+            button { background: #007bff; color: white; padding: 12px 24px; border: none; cursor: pointer; border-radius: 5px; }
+            .success { color: green; margin: 10px 0; }
+            .error { color: red; margin: 10px 0; }
         </style>
     </head>
     <body>
         <h2>🏥 Agregar Nuevo Cliente</h2>
+
+        <div id="message"></div>
+
         <form id="clienteForm">
             <label>Nombre:</label>
             <input type="text" name="nombre" required>
@@ -130,11 +135,11 @@ async def form_cliente():
             <label>Apellido Materno:</label>
             <input type="text" name="apellido_materno" required>
 
-            <label>DNI:</label>
-            <input type="text" name="dni" pattern="[0-9]{8}" required>
+            <label>DNI (8 dígitos):</label>
+            <input type="text" name="dni" pattern="[0-9]{8}" maxlength="8" required>
 
-            <label>Teléfono:</label>
-            <input type="text" name="telefono" pattern="9[0-9]{8}" required>
+            <label>Teléfono (9 dígitos, empieza con 9):</label>
+            <input type="text" name="telefono" pattern="9[0-9]{8}" maxlength="9" required>
 
             <label>Email:</label>
             <input type="email" name="email" required>
@@ -154,26 +159,30 @@ async def form_cliente():
         <script>
             document.getElementById('clienteForm').onsubmit = async function(e) {
                 e.preventDefault();
+
+                const messageDiv = document.getElementById('message');
+                messageDiv.innerHTML = 'Guardando...';
+
                 const formData = new FormData(e.target);
                 const data = Object.fromEntries(formData);
 
                 try {
-                    const response = await fetch('/clientes', {
-                        method: 'POST',
-                        headers: {'Content-Type': 'application/json'},
-                        body: JSON.stringify(data)
+                    // Construir URL para GET con parámetros
+                    const params = new URLSearchParams(data);
+                    const response = await fetch('/crear-cliente?' + params.toString(), {
+                        method: 'GET'
                     });
 
                     const result = await response.json();
 
                     if (response.ok) {
-                        alert('✅ Cliente creado exitosamente!');
+                        messageDiv.innerHTML = '<div class="success">✅ Cliente creado exitosamente!</div>';
                         e.target.reset();
                     } else {
-                        alert('❌ Error: ' + result.detail);
+                        messageDiv.innerHTML = '<div class="error">❌ Error: ' + result.detail + '</div>';
                     }
                 } catch (error) {
-                    alert('❌ Error de conexión');
+                    messageDiv.innerHTML = '<div class="error">❌ Error de conexión</div>';
                 }
             };
         </script>
@@ -181,6 +190,56 @@ async def form_cliente():
     </html>
     """
     return html_content
+
+
+# Endpoint GET para crear cliente (desde el formulario)
+@app.get("/crear-cliente")
+async def crear_cliente_get(
+        nombre: str,
+        apellido_paterno: str,
+        apellido_materno: str,
+        dni: str,
+        telefono: str,
+        email: str,
+        direccion: str = "",
+        genero: str = "M",
+        db: Session = Depends(get_db)
+):
+    """Crear cliente via GET desde formulario"""
+    try:
+        # Validar DNI único
+        existing = db.query(Cliente).filter(Cliente.dni == dni).first()
+        if existing:
+            raise HTTPException(status_code=400, detail="DNI ya existe")
+
+        # Crear cliente
+        nuevo_cliente = Cliente(
+            nombre=nombre,
+            apellido_paterno=apellido_paterno,
+            apellido_materno=apellido_materno,
+            dni=dni,
+            telefono=telefono,
+            email=email,
+            direccion=direccion if direccion else None,
+            genero=genero,
+            estado="Activo"
+        )
+
+        db.add(nuevo_cliente)
+        db.commit()
+        db.refresh(nuevo_cliente)
+
+        return {
+            "success": True,
+            "message": "Cliente creado exitosamente",
+            "cliente_id": nuevo_cliente.id_cliente
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
 
 @app.get("/health")
 async def health():
