@@ -1,8 +1,15 @@
 # app/schemas/clientes_schema.py
 from pydantic import BaseModel, EmailStr, validator
-from typing import Optional
+from typing import Optional, Literal
 from datetime import datetime
 from .base_schema import BaseResponse, PaginationResponse, validate_dni, validate_telefono, validate_name
+
+# Validator personalizado para género
+def validate_genero(v):
+    """Validar que el género sea F o M"""
+    if v is not None and v not in ['F', 'M']:
+        raise ValueError('El género debe ser F (Femenino) o M (Masculino)')
+    return v
 
 # ===== SCHEMAS DE INPUT (REQUEST) =====
 
@@ -14,6 +21,7 @@ class ClienteCreate(BaseModel):
     dni: str
     telefono: str
     email: EmailStr
+    genero: Literal['F', 'M']  # Campo requerido
     direccion: Optional[str] = None
     estado: Optional[str] = "Activo"
     
@@ -23,6 +31,7 @@ class ClienteCreate(BaseModel):
     _validate_apellido_materno = validator('apellido_materno', allow_reuse=True)(validate_name)
     _validate_dni = validator('dni', allow_reuse=True)(validate_dni)
     _validate_telefono = validator('telefono', allow_reuse=True)(validate_telefono)
+    _validate_genero = validator('genero', allow_reuse=True)(validate_genero)
 
 
 class ClienteUpdate(BaseModel):
@@ -32,6 +41,7 @@ class ClienteUpdate(BaseModel):
     apellido_materno: Optional[str] = None
     telefono: Optional[str] = None
     email: Optional[EmailStr] = None
+    genero: Optional[Literal['F', 'M']] = None  # Campo opcional para actualización
     direccion: Optional[str] = None
     estado: Optional[str] = None
     
@@ -40,6 +50,7 @@ class ClienteUpdate(BaseModel):
     _validate_apellido_paterno = validator('apellido_paterno', allow_reuse=True)(validate_name)
     _validate_apellido_materno = validator('apellido_materno', allow_reuse=True)(validate_name)
     _validate_telefono = validator('telefono', allow_reuse=True)(validate_telefono)
+    _validate_genero = validator('genero', allow_reuse=True)(validate_genero)
 
 
 # ===== SCHEMAS DE OUTPUT (RESPONSE) =====
@@ -53,6 +64,7 @@ class ClienteResponse(BaseResponse):
     dni: str
     telefono: str
     email: str
+    genero: str  # Campo incluido en la respuesta
     direccion: Optional[str]
     fecha_registro: Optional[datetime]
     estado: Optional[str]
@@ -71,5 +83,6 @@ class ClienteSearch(BaseModel):
     dni: Optional[str] = None
     email: Optional[str] = None
     estado: Optional[str] = None
+    genero: Optional[Literal['F', 'M']] = None  # Filtro por género
     page: int = 1
     per_page: int = 20

@@ -44,7 +44,8 @@ async def get_clientes(
         db: Session = Depends(get_db),
         page: int = Query(1, ge=1, description="Número de página"),
         per_page: int = Query(20, ge=1, le=100, description="Elementos por página"),
-        estado: Optional[str] = Query(None, description="Filtrar por estado")
+        estado: Optional[str] = Query(None, description="Filtrar por estado"),
+        genero: Optional[str] = Query(None, description="Filtrar por género (F/M)")
 ):
     """
     Obtener lista de clientes con paginación
@@ -54,6 +55,14 @@ async def get_clientes(
     query = db.query(Cliente)  # ✅ Usar Cliente directamente
     if estado:
         query = query.filter(Cliente.estado == estado)
+    
+    if genero:
+        if genero not in ['F', 'M']:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="El género debe ser F (Femenino) o M (Masculino)"
+            )
+        query = query.filter(Cliente.genero == genero)
 
     total = query.count()
     clientes = query.offset(skip).limit(per_page).all()
@@ -182,7 +191,8 @@ async def get_mascotas_cliente(
     return {
         "cliente": {
             "id": cliente_obj.id_cliente,
-            "nombre": f"{cliente_obj.nombre} {cliente_obj.apellido_paterno}"
+            "nombre": f"{cliente_obj.nombre} {cliente_obj.apellido_paterno}",
+            "genero": cliente_obj.genero
         },
         "mascotas": mascotas,
         "total_mascotas": len(mascotas)
@@ -221,3 +231,56 @@ async def get_cliente_by_email(
             detail="Cliente no encontrado"
         )
     return cliente_obj
+
+
+# ===== NUEVOS ENDPOINTS RELACIONADOS CON GÉNERO =====
+
+@router.get("/genero/{genero}", response_model=ClienteListResponse)
+async def get_clientes_by_genero(
+        genero: str,
+        db: Session = Depends(get_db),
+        page: int = Query(1, ge=1, description="Número de página"),
+        per_page: int = Query(20, ge=1, le=100, description="Elementos por página")
+):
+    """
+    Obtener clientes filtrados por género
+    """
+    if genero not in ['F', 'M']:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="El género debe ser F (Femenino) ou M (Masculino)"
+        )
+    
+    clientes_result = cliente.get_clientes_by_genero(db, genero=genero)
+    
+    # Aplicar paginación manual
+    start = (page - 1) * per_page
+    end = start + per_page
+    clientes_paginated = clientes_result[start:end]
+    total = len(clientes_result)
+    
+    return {
+        "clientes": clientes_paginated,
+        "total": total,
+        "page": page,
+        "per_page": per_page,
+        "total_pages": (total + per_page - 1) // per_page
+    }
+
+
+@router.get("/stats/genero")
+async def get_estadisticas_genero(
+        db: Session = Depends(get_db)
+):
+    """
+    Obtener estadísticas de clientes por género
+    """
+    estadisticas = cliente.get_estadisticas_por_genero(db)
+    
+    return {
+        "estadisticas": estadisticas,
+        "porcentajes": {
+            "femenino": round((estadisticas['F'] / estadisticas['total'] * 100), 2) if estadisticas['total'] > 0 else 0,
+            "masculino": round((estadisticas['M'] / estadisticas['total'] * 100), 2) if estadisticas['total'] > 0 else 0
+        }
+    }

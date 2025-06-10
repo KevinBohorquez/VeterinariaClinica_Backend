@@ -21,14 +21,6 @@ from app.api.v1.endpoints.administradores import router as administradores_route
 from app.api.v1.endpoints.catalogos import router as catalogos_router
 from app.api.v1.endpoints.consultas import router as consultas_router
 
-# Importación condicional para solicitudes (si existe)
-SOLICITUDES_AVAILABLE = False
-try:
-    from app.api.v1.endpoints.solicitudes import router as solicitudes_router
-    SOLICITUDES_AVAILABLE = True
-except ImportError:
-    print("⚠️ Módulo solicitudes no disponible - continuando sin él")
-
 app = FastAPI(
     title="🏥 Sistema Veterinaria API Completo",
     description="API integral para gestión de veterinaria con autenticación y todos los módulos",
@@ -37,7 +29,11 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[
+        "*",
+        "http://localhost:5173",
+        "https://colitasfelices.netlify.app/"  # Frontend local       
+                   ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -63,11 +59,6 @@ app.include_router(catalogos_router, prefix="/api/v1/catalogos", tags=["📋 cat
 # Procesos clínicos
 app.include_router(consultas_router, prefix="/api/v1/consultas", tags=["🏥 consultas"])
 
-# Router condicional
-if SOLICITUDES_AVAILABLE:
-    app.include_router(solicitudes_router, prefix="/api/v1/solicitudes", tags=["📋 solicitudes"])
-
-
 # ===== ENDPOINTS PRINCIPALES =====
 
 @app.get("/")
@@ -84,9 +75,6 @@ async def root():
         "📋 catálogos": "/api/v1/catalogos - Razas, especialidades, servicios, patologías",
         "🏥 consultas": "/api/v1/consultas - Procesos clínicos completos"
     }
-
-    if SOLICITUDES_AVAILABLE:
-        available_modules["📋 solicitudes"] = "/api/v1/solicitudes - Solicitudes de atención"
 
     return {
         "message": "🏥 Sistema Veterinaria API COMPLETO funcionando!",

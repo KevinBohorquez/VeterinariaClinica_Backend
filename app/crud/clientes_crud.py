@@ -40,6 +40,10 @@ class CRUDCliente(CRUDBase[Cliente, ClienteCreate, ClienteUpdate]):
         if search_params.estado:
             query = query.filter(Cliente.estado == search_params.estado)
         
+        # Filtro por género
+        if search_params.genero:
+            query = query.filter(Cliente.genero == search_params.genero)
+        
         # Contar total
         total = query.count()
         
@@ -72,8 +76,34 @@ class CRUDCliente(CRUDBase[Cliente, ClienteCreate, ClienteUpdate]):
             Cliente.nombre,
             Cliente.apellido_paterno,
             Cliente.email,
+            Cliente.genero,  # Incluir género en la consulta
             db.func.count(Mascota.id_mascota).label('total_mascotas')
         ).outerjoin(Mascota).group_by(Cliente.id_cliente).all()
+
+    def get_clientes_by_genero(self, db: Session, *, genero: str) -> List[Cliente]:
+        """Obtener clientes filtrados por género"""
+        return db.query(Cliente).filter(Cliente.genero == genero).all()
+
+    def get_estadisticas_por_genero(self, db: Session) -> dict:
+        """Obtener estadísticas de clientes por género"""
+        from sqlalchemy import func
+        
+        result = db.query(
+            Cliente.genero,
+            func.count(Cliente.id_cliente).label('total')
+        ).group_by(Cliente.genero).all()
+        
+        estadisticas = {
+            'F': 0,
+            'M': 0,
+            'total': 0
+        }
+        
+        for row in result:
+            estadisticas[row.genero] = row.total
+            estadisticas['total'] += row.total
+            
+        return estadisticas
 
 # Instancia única
 cliente = CRUDCliente(Cliente)
