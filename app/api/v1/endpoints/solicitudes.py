@@ -115,3 +115,21 @@ async def get_solicitud_atencion(
             status_code=500,
             detail=f"Error al obtener solicitud: {str(e)}"
         )
+
+@router.delete("/{solicitud_id}")
+async def delete_solicitud(
+        solicitud_id: int,
+        db: Session = Depends(get_db)
+):
+    """
+    Eliminar una mascota
+    """
+    solicitud_atencion_obj = solicitud_atencion.get(db, solicitud_id)
+    if not solicitud_atencion_obj:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Mascota no encontrada"
+        )
+
+    solicitud_atencion.remove(db, id=solicitud_id)
+    return {"message": "Mascota eliminada correctamente", "success": True}
