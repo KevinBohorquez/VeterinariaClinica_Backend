@@ -776,3 +776,34 @@ async def finalizar_consulta(
             status_code=500,
             detail=f"Error al finalizar consulta: {str(e)}"
         )
+
+@router.get("/historial/{mascota_id}")
+async def get_historial_clinico_mascota(
+    mascota_id: int,
+    db: Session = Depends(get_db),
+    limit: int = Query(50, ge=1, le=500, description="Cantidad máxima de eventos")
+):
+    """
+    Obtener historial clínico de una mascota
+    """
+    try:
+        eventos = historial_clinico.get_by_mascota(db, mascota_id=mascota_id, limit=limit)
+
+        return [
+            {
+                "id_historial": e.id_historial,
+                "fecha_evento": e.fecha_evento,
+                "tipo_evento": e.tipo_evento,
+                "edad_meses": e.edad_meses,
+                "descripcion_evento": e.descripcion_evento,
+                "peso_momento": float(e.peso_momento) if e.peso_momento else None,
+                "observaciones": e.observaciones
+            }
+            for e in eventos
+        ]
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error al obtener historial clínico: {str(e)}"
+        )
