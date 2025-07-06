@@ -84,6 +84,91 @@ class TriajeResponse(BaseResponse):
     condicion_corporal: str
 
 
+# app/schemas/triaje_schemas.py - Agregar a tu archivo existente
+
+class TriajeUpdate(BaseModel):
+    """Schema para actualizar triaje"""
+    id_veterinario: Optional[int] = None
+    peso_mascota: Optional[float] = None
+    latido_por_minuto: Optional[int] = None
+    frecuencia_respiratoria_rpm: Optional[int] = None
+    temperatura: Optional[float] = None
+    frecuencia_pulso: Optional[int] = None
+    clasificacion_urgencia: Optional[str] = None
+    talla: Optional[float] = None
+    tiempo_capilar: Optional[str] = None
+    color_mucosas: Optional[str] = None
+    porce_deshidratacion: Optional[float] = None
+    condicion_corporal: Optional[str] = None
+
+    @validator('peso_mascota')
+    def validate_peso(cls, v):
+        if v is not None and (v <= 0 or v > 100):
+            raise ValueError('Peso debe estar entre 0 y 100 kg')
+        return v
+
+    @validator('latido_por_minuto')
+    def validate_latido(cls, v):
+        if v is not None and (v < 40 or v > 300):
+            raise ValueError('Latidos por minuto debe estar entre 40 y 300')
+        return v
+
+    @validator('frecuencia_respiratoria_rpm')
+    def validate_frecuencia_respiratoria(cls, v):
+        if v is not None and (v < 10 or v > 150):
+            raise ValueError('Frecuencia respiratoria debe estar entre 10 y 150')
+        return v
+
+    @validator('temperatura')
+    def validate_temperatura(cls, v):
+        if v is not None and (v < 35.0 or v > 42.0):
+            raise ValueError('Temperatura debe estar entre 35.0 y 42.0°C')
+        return v
+
+    @validator('frecuencia_pulso')
+    def validate_frecuencia_pulso(cls, v):
+        if v is not None and (v < 30 or v > 250):
+            raise ValueError('Frecuencia de pulso debe estar entre 30 y 250')
+        return v
+
+    @validator('talla')
+    def validate_talla(cls, v):
+        if v is not None and (v <= 0 or v > 200):
+            raise ValueError('Talla debe estar entre 0 y 200 cm')
+        return v
+
+    @validator('porce_deshidratacion')
+    def validate_porce_deshidratacion(cls, v):
+        if v is not None and (v < 0 or v > 100):
+            raise ValueError('Porcentaje de deshidratación debe estar entre 0 y 100')
+        return v
+
+    @validator('tiempo_capilar')
+    def validate_tiempo_capilar(cls, v):
+        if v is not None and len(v.strip()) < 1:
+            raise ValueError('Tiempo capilar debe tener al menos 1 caracter')
+        return v
+
+    @validator('color_mucosas')
+    def validate_color_mucosas(cls, v):
+        if v is not None and len(v.strip()) < 3:
+            raise ValueError('Color de mucosas debe tener al menos 3 caracteres')
+        return v
+
+    @validator('condicion_corporal')
+    def validate_condicion_corporal(cls, v):
+        valid_conditions = ['Muy delgado', 'Delgado', 'Ideal', 'Sobrepeso', 'Obeso']
+        if v is not None and v not in valid_conditions:
+            raise ValueError(f'Condición corporal debe ser una de: {valid_conditions}')
+        return v
+
+    @validator('clasificacion_urgencia')
+    def validate_clasificacion_urgencia(cls, v):
+        valid_classifications = ['No urgente', 'Poco urgente', 'Urgente', 'Muy urgente', 'Critico']
+        if v is not None and v not in valid_classifications:
+            raise ValueError(f'Clasificación de urgencia debe ser una de: {valid_classifications}')
+        return v
+
 # ===== CONSULTA =====
 
 class ConsultaCreate(BaseModel):
