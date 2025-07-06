@@ -133,6 +133,24 @@ async def get_cita(
             detail=f"Error al obtener cita: {str(e)}"
         )
 
+@router.delete("/cita/{cita_id}")
+async def delete_cita(
+        cita_id: int,
+        db: Session = Depends(get_db)
+):
+    """
+    Eliminar una cita
+    """
+    cita_obj = cita.get(db, cita_id)
+    if not cita_obj:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Cita no encontrada"
+        )
+
+    cita.remove(db, id=cita_id)
+    return {"message": "Cita eliminada correctamente", "success": True}
+
 
 @router.get("/search")
 async def search_consultas_endpoint(

@@ -122,14 +122,14 @@ async def delete_solicitud(
         db: Session = Depends(get_db)
 ):
     """
-    Eliminar una mascota
+    Eliminar una solicitud
     """
     solicitud_atencion_obj = solicitud_atencion.get(db, solicitud_id)
     if not solicitud_atencion_obj:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Mascota no encontrada"
+            detail="Solicitud no encontrada"
         )
 
     solicitud_atencion.remove(db, id=solicitud_id)
-    return {"message": "Mascota eliminada correctamente", "success": True}
+    return {"message": "Solicitud eliminada correctamente", "success": True}
