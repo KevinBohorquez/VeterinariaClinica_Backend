@@ -444,14 +444,18 @@ async def get_all_mascotas(db: Session = Depends(get_db)):
     Obtener todas las mascotas con sus detalles: nombre, especie, raza, género, color.
     """
     try:
-        # Obtener todas las mascotas junto con su raza y especie (tipo de animal)
+        # Obtener todas las mascotas junto con su raza, especie (tipo de animal), y otros detalles
         mascotas = db.query(
             Mascota.id_mascota,  # ID de la mascota para uso futuro
-            Mascota.nombre,
-            TipoAnimal.descripcion.label('especie'),
-            Raza.nombre_raza.label('raza'),
-            Mascota.sexo.label('genero'),
-            Mascota.color
+            Mascota.nombre,      # Nombre de la mascota
+            Mascota.sexo.label('genero'),  # Género de la mascota
+            Mascota.color,       # Color de la mascota
+            Raza.nombre_raza.label('raza'),  # Nombre de la raza
+            TipoAnimal.descripcion.label('especie'),  # Descripción de la especie (Perro o Gato)
+            Mascota.edad_anios,  # Edad en años de la mascota
+            Mascota.edad_meses,  # Edad en meses de la mascota
+            Mascota.esterilizado,  # Estado de esterilización
+            Mascota.imagen       # Imagen de la mascota
         ).join(
             Raza, Mascota.id_raza == Raza.id_raza
         ).join(
@@ -461,14 +465,19 @@ async def get_all_mascotas(db: Session = Depends(get_db)):
         if not mascotas:
             raise HTTPException(status_code=404, detail="No hay mascotas registradas")
 
-        # Retornar los detalles sin mostrar el ID de la mascota
+        # Retornar todos los detalles de las mascotas
         return [
             {
+                "id_mascota": mascota.id_mascota,
                 "nombre": mascota.nombre,
-                "especie": mascota.especie,
-                "raza": mascota.raza,
                 "genero": mascota.genero,
-                "color": mascota.color
+                "color": mascota.color,
+                "raza": mascota.raza,
+                "especie": mascota.especie,
+                "edad_anios": mascota.edad_anios,
+                "edad_meses": mascota.edad_meses,
+                "esterilizado": mascota.esterilizado,
+                "imagen": mascota.imagen
             }
             for mascota in mascotas
         ]
