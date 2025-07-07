@@ -845,16 +845,17 @@ async def get_historial_clinico_mascota(
 
 @router.get("/historialConsultas/{mascota_id}", response_model=List[dict])
 async def get_historial_clinico_mascota(
-    mascota_id: int,
-    db: Session = Depends(get_db),
-    limit: int = Query(50, ge=1, le=500, description="Cantidad máxima de eventos")
+        mascota_id: int,
+        db: Session = Depends(get_db),
+        limit: int = Query(50, ge=1, le=500, description="Cantidad máxima de eventos")
 ):
     """
-    Obtener historial clínico de una mascota
+    Obtener historial clínico de una mascota, con datos de consulta relacionados
     """
     try:
-        # Consultar los eventos en historial clínico relacionados con la mascota
-        eventos = db.query(HistorialClinico).join(Consulta).join(Triaje).join(SolicitudAtencion).filter(
+        # Consultar los eventos en historial clínico relacionados con la mascota,
+        # junto con los datos de la tabla Consulta
+        eventos = db.query(HistorialClinico, Consulta).join(Consulta).join(Triaje).join(SolicitudAtencion).filter(
             HistorialClinico.id_mascota == mascota_id
         ).limit(limit).all()
 
@@ -864,13 +865,12 @@ async def get_historial_clinico_mascota(
         # Mapear los eventos para devolverlos en el formato adecuado
         return [
             {
-                "id_historial": e.id_historial,
-                "fecha_evento": e.fecha_evento,
-                "tipo_evento": e.tipo_evento,
-                "edad_meses": e.edad_meses,
-                "descripcion_evento": e.descripcion_evento,
-                "peso_momento": float(e.peso_momento) if e.peso_momento else None,
-                "observaciones": e.observaciones
+                # Campos de la tabla Consulta
+                "fecha_consulta": e[1].fecha_consulta,
+                "tipo_consulta": e[1].tipo_consulta,
+                "motivo_consulta": e[1].motivo_consulta,
+                "diagnostico_preliminar": e[1].diagnostico_preliminar,
+                "observaciones_consulta": e[1].observaciones
             }
             for e in eventos
         ]
