@@ -5,6 +5,8 @@ from typing import List, Optional
 from datetime import datetime, date
 
 from app.config.database import get_db
+from app.crud.catalogo_crud import servicio
+from app.crud import servicio_solicitado
 from app.crud.consulta_crud import (
     consulta, diagnostico, tratamiento, historial_clinico,
     triaje, solicitud_atencion, cita
@@ -838,3 +840,26 @@ async def get_historial_clinico_mascota(
             status_code=500,
             detail=f"Error al obtener historial clínico: {str(e)}"
         )
+
+
+@router.get("/cita/{cita_id}")
+async def get_cita_by_id( cita_id: int, db: Session = Depends(get_db)):
+    try:
+        # Obtener la cita con el servicio asociado
+        from app.crud.consulta_crud import cita
+        cita = db.query(cita.id_cita, cita.fecha_hora_programada, cita.estado_cita, servicio.nombre_servicio) \
+                 .join(servicio_solicitado, cita.id_servicio_solicitado == servicio_solicitado.id_servicio_solicitado) \
+                 .join(servicio, servicio_solicitado.id_servicio == servicio.id_servicio) \
+                 .filter(cita.id_cita == cita_id).first()
+
+        if not cita:
+            raise HTTPException(status_code=404, detail="Cita no encontrada")
+
+        return {
+            "id_cita": cita.id_cita,
+            "fecha_hora_programada": cita.fecha_hora_programada,
+            "estado_cita": cita.estado_cita,
+            "nombre_servicio": cita.nombre_servicio
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error al obtener cita: {str(e)}")
