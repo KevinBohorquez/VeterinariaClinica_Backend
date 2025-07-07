@@ -12,7 +12,8 @@ from app.crud.consulta_crud import (
     triaje, solicitud_atencion, cita
 )
 from app.crud.veterinario_crud import veterinario
-from app.models import Cita, ResultadoServicio, ServicioSolicitado, Servicio, Veterinario, Mascota, HistorialClinico
+from app.models import Cita, ResultadoServicio, ServicioSolicitado, Servicio, Veterinario, Mascota, HistorialClinico, \
+    Diagnostico, Tratamiento, Patologia
 from app.models.consulta import Consulta
 from app.models.triaje import Triaje
 from app.models.solicitud_atencion import SolicitudAtencion
@@ -1007,3 +1008,70 @@ async def update_resultado_servicio(cita_id: int, resultado_servicio_update: Res
         archivo_adjunto=resultado_servicio.archivo_adjunto,
         fecha_realizacion=resultado_servicio.fecha_realizacion
     )
+
+
+@router.get("/diagnosticos/{id_consulta}", response_model=List[DiagnosticoResponse])
+async def get_diagnosticos_by_consulta(
+        id_consulta: int,
+        db: Session = Depends(get_db)
+):
+    """
+    Obtener todos los diagnósticos relacionados con una consulta específica.
+    """
+    try:
+        # Realizar la consulta para obtener todos los diagnósticos relacionados con la consulta
+        diagnosticos = db.query(Diagnostico).filter(Diagnostico.id_consulta == id_consulta).all()
+
+        # Si no se encuentran diagnósticos
+        if not diagnosticos:
+            raise HTTPException(status_code=404, detail="No se encontraron diagnósticos para esta consulta")
+
+        # Retornar la lista de diagnósticos
+        return diagnosticos
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error al obtener diagnósticos: {str(e)}"
+        )
+
+@router.get("/diagnostico/{id_diagnostico}/info", response_model=List[dict])
+async def get_tratamiento_patologia_by_diagnostico(
+    id_diagnostico: int,
+    db: Session = Depends(get_db)
+):
+    """
+    Obtener tratamiento y patología relacionados a un diagnóstico dado su id_diagnostico
+    """
+    try:
+        # Realizamos la consulta para obtener los tratamientos y patologías relacionados al diagnóstico
+        tratamiento_patologia = db.query(Tratamiento, Patologia) \
+            .join(Patologia, Patologia.id_patologia == Tratamiento.id_patologia) \
+            .join(Diagnostico, Diagnostico.id_patologia == Patologia.id_patologia) \
+            .filter(Diagnostico.id_diagnostico == id_diagnostico) \
+            .all()
+
+        if not tratamiento_patologia:
+            raise HTTPException(
+                status_code=404,
+                detail="No se encontraron tratamientos o patologías para este diagnóstico"
+            )
+
+        # Devolver la respuesta mapeando los resultados
+        return [
+            {
+                "id_tratamiento": t.id_tratamiento,
+                "id_patologia": p.id_patologia,
+                "nombre_patologia": p.nombre_patologia,
+                "fecha_inicio_tratamiento": t.fecha_inicio,
+                "tipo_tratamiento": t.tipo_tratamiento,
+                "eficacia_tratamiento": t.eficacia_tratamiento
+            }
+            for t, p in tratamiento_patologia
+        ]
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error al obtener tratamiento y patología: {str(e)}"
+        )
