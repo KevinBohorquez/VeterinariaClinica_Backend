@@ -241,6 +241,55 @@ async def update_mascota(
 
     return mascota.update(db, db_obj=mascota_obj, obj_in=mascota_data)
 
+@router.get("/mascotasInfo")
+async def get_all_mascotas(db: Session = Depends(get_db)):
+    """
+    Obtener todas las mascotas con sus detalles: nombre, especie, raza, género, color.
+    """
+    try:
+        # Obtener todas las mascotas junto con su raza, especie (TipoAnimal) y otra información
+        mascotas = db.query(
+            Mascota.id_mascota,
+            Mascota.nombre,
+            Raza.nombre_raza.label('raza'),
+            TipoAnimal.descripcion.label('especie'),
+            Mascota.sexo.label('genero'),
+            Mascota.color,
+            Mascota.edad_anios,
+            Mascota.edad_meses,
+            Mascota.esterilizado,
+            Mascota.imagen
+        ).join(
+            Raza, Mascota.id_raza == Raza.id_raza
+        ).join(
+            TipoAnimal, Raza.id_raza == TipoAnimal.id_raza
+        ).all()
+
+        if not mascotas:
+            raise HTTPException(status_code=404, detail="No hay mascotas registradas")
+
+        # Formatear los resultados para devolverlos como un JSON más legible
+        result = [
+            {
+                "id_mascota": mascota.id_mascota,
+                "nombre": mascota.nombre,
+                "especie": mascota.especie,
+                "raza": mascota.raza,
+                "genero": mascota.genero,
+                "color": mascota.color,
+                "edad_anios": mascota.edad_anios,
+                "edad_meses": mascota.edad_meses,
+                "esterilizado": mascota.esterilizado,
+                "imagen": mascota.imagen
+            }
+            for mascota in mascotas
+        ]
+
+        return result
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error al obtener las mascotas: {str(e)}")
+
 
 @router.delete("/{mascota_id}")
 async def delete_mascota(
@@ -438,51 +487,3 @@ async def get_ultima_atencion_mascota(
         )
 
 
-@router.get("/mascotasInfo")
-async def get_all_mascotas(db: Session = Depends(get_db)):
-    """
-    Obtener todas las mascotas con sus detalles: nombre, especie, raza, género, color.
-    """
-    try:
-        # Obtener todas las mascotas junto con su raza, especie (TipoAnimal) y otra información
-        mascotas = db.query(
-            Mascota.id_mascota,
-            Mascota.nombre,
-            Raza.nombre_raza.label('raza'),
-            TipoAnimal.descripcion.label('especie'),
-            Mascota.sexo.label('genero'),
-            Mascota.color,
-            Mascota.edad_anios,
-            Mascota.edad_meses,
-            Mascota.esterilizado,
-            Mascota.imagen
-        ).join(
-            Raza, Mascota.id_raza == Raza.id_raza
-        ).join(
-            TipoAnimal, Raza.id_raza == TipoAnimal.id_raza
-        ).all()
-
-        if not mascotas:
-            raise HTTPException(status_code=404, detail="No hay mascotas registradas")
-
-        # Formatear los resultados para devolverlos como un JSON más legible
-        result = [
-            {
-                "id_mascota": mascota.id_mascota,
-                "nombre": mascota.nombre,
-                "especie": mascota.especie,
-                "raza": mascota.raza,
-                "genero": mascota.genero,
-                "color": mascota.color,
-                "edad_anios": mascota.edad_anios,
-                "edad_meses": mascota.edad_meses,
-                "esterilizado": mascota.esterilizado,
-                "imagen": mascota.imagen
-            }
-            for mascota in mascotas
-        ]
-
-        return result
-
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error al obtener las mascotas: {str(e)}")
