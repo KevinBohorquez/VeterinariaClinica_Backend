@@ -12,7 +12,7 @@ from app.crud.consulta_crud import (
     triaje, solicitud_atencion, cita
 )
 from app.crud.veterinario_crud import veterinario
-from app.models import Cita, ResultadoServicio, ServicioSolicitado
+from app.models import Cita, ResultadoServicio, ServicioSolicitado, Servicio, Veterinario
 from app.models.consulta import Consulta
 from app.models.triaje import Triaje
 from app.models.solicitud_atencion import SolicitudAtencion
@@ -879,14 +879,14 @@ async def get_cita_by_id(cita_id: int, db: Session = Depends(get_db)):
                 Cita.id_cita,
                 Cita.fecha_hora_programada,
                 Cita.estado_cita,
-                servicio.nombre_servicio,
-                veterinario.nombre.label("veterinario_nombre"),
-                veterinario.apellido_paterno.label("veterinario_apellido")
+                Servicio.nombre_servicio,
+                Veterinario.nombre.label("veterinario_nombre"),
+                Veterinario.apellido_paterno.label("veterinario_apellido")
             ) \
-            .join(servicio_solicitado, Cita.id_servicio_solicitado == servicio_solicitado.id_servicio_solicitado) \
-            .join(servicio, ServicioSolicitado.id_servicio == servicio.id_servicio) \
+            .join(ServicioSolicitado, Cita.id_servicio_solicitado == ServicioSolicitado.id_servicio_solicitado) \
+            .join(Servicio, ServicioSolicitado.id_servicio == Servicio.id_servicio) \
             .join(ResultadoServicio, ResultadoServicio.id_cita == Cita.id_cita) \
-            .join(veterinario, ResultadoServicio.id_veterinario == veterinario.id_veterinario) \
+            .join(Veterinario, ResultadoServicio.id_veterinario == Veterinario.id_veterinario) \
             .filter(Cita.id_cita == cita_id) \
             .first()
 
