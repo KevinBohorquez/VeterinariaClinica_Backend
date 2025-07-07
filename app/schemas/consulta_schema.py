@@ -78,6 +78,11 @@ class TriajeResponse(BaseResponse):
     fecha_hora_triaje: datetime
     peso_mascota: float
     latido_por_minuto: int
+    talla: float
+    tiempo_capilar: str
+    color_mucosas: str
+    frecuencia_pulso: int
+    porce_deshidratacion: float
     frecuencia_respiratoria_rpm: int
     temperatura: float
     clasificacion_urgencia: str
