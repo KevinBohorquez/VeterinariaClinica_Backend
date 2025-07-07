@@ -23,30 +23,49 @@ async def get_servicios_solicitados(db: Session = Depends(get_db)):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error al obtener servicios solicitados: {str(e)}")
 
+
+# 1. Obtener todos los servicios solicitados que tienen citas
 @router.get("/pendientes", response_model=List[ServicioSolicitadoResponse])
 async def get_servicios_solicitados_pendientes(db: Session = Depends(get_db)):
     """
-    Obtener todos los servicios solicitados con estado 'Pendiente' de la cita
+    Obtener todos los servicios solicitados que tienen citas asociadas
+    Equivale a: SELECT * FROM Cita c INNER JOIN Servicio_Solicitado ON c.id_servicio_solicitado = Servicio_Solicitado.id_servicio_solicitado
     """
     try:
-        servicios_pendientes = db.query(ServicioSolicitado).join(Cita).filter(Cita.estado_cita == "Pendiente").all()
-        return servicios_pendientes
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error al obtener servicios solicitados pendientes: {str(e)}")
+        servicios_con_cita = db.query(ServicioSolicitado) \
+            .join(Cita, Cita.id_servicio_solicitado == ServicioSolicitado.id_servicio_solicitado) \
+            .all()
 
-@router.get("/pendientes/{id_servicio_solicitado}", response_model=List[ServicioSolicitadoResponse])
-async def get_servicios_solicitados_pendientes_por_servicio(id_servicio_solicitado: int, db: Session = Depends(get_db)):
+        return servicios_con_cita
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error al obtener servicios solicitados con citas: {str(e)}")
+
+
+# 2. Obtener un servicio solicitado específico que tenga cita
+@router.get("/pendientes/{id_servicio_solicitado}", response_model=ServicioSolicitadoResponse)
+async def get_servicio_solicitado_pendiente_por_id(id_servicio_solicitado: int, db: Session = Depends(get_db)):
     """
-    Obtener los servicios solicitados con estado 'Pendiente' para un servicio específico
+    Obtener un servicio solicitado específico que tenga cita asociada
     """
     try:
-        servicios_pendientes = db.query(ServicioSolicitado).join(Cita).filter(
-            Cita.estado_cita == "Pendiente",
-            ServicioSolicitado.id_servicio_solicitado == id_servicio_solicitado
-        ).all()
-        return servicios_pendientes
+        servicio_con_cita = db.query(ServicioSolicitado) \
+            .join(Cita, Cita.id_servicio_solicitado == ServicioSolicitado.id_servicio_solicitado) \
+            .filter(ServicioSolicitado.id_servicio_solicitado == id_servicio_solicitado) \
+            .first()
+
+        if not servicio_con_cita:
+            raise HTTPException(
+                status_code=404,
+                detail="Servicio solicitado no encontrado o no tiene cita asociada"
+            )
+
+        return servicio_con_cita
+
+    except HTTPException:
+        raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error al obtener servicios solicitados pendientes: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error al obtener servicio solicitado: {str(e)}")
 
 @router.put("/id_servicio_solicitado}", response_model=ServicioSolicitadoResponse)
 async def update_servicio_solicitado(id_servicio_solicitado: int, servicio_solicitado: ServicioSolicitadoUpdate, db: Session = Depends(get_db)):

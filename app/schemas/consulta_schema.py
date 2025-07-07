@@ -357,6 +357,7 @@ class ServicioSolicitadoUpdate(BaseModel):
     prioridad: Optional[str] = None
     comentario_opcional: Optional[str] = None
     fecha_solicitado: Optional[datetime] = None
+    estado_examen: Optional[str] = None
 
     @validator('prioridad')
     def validate_prioridad(cls, v):
