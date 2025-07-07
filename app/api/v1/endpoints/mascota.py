@@ -438,7 +438,7 @@ async def get_ultima_atencion_mascota(
         )
 
 
-@router.get("/mascotasINFO")
+@router.get("/mascotas")
 async def get_all_mascotas(db: Session = Depends(get_db)):
     """
     Obtener todas las mascotas con sus detalles: nombre, especie, raza, género, color.
@@ -446,6 +446,7 @@ async def get_all_mascotas(db: Session = Depends(get_db)):
     try:
         # Obtener todas las mascotas junto con su raza y especie (tipo de animal)
         mascotas = db.query(
+            Mascota.id_mascota,  # ID de la mascota para uso futuro
             Mascota.nombre,
             TipoAnimal.descripcion.label('especie'),
             Raza.nombre_raza.label('raza'),
@@ -474,5 +475,3 @@ async def get_all_mascotas(db: Session = Depends(get_db)):
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error al obtener las mascotas: {str(e)}")
-
-
