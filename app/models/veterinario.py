@@ -22,7 +22,7 @@ class Veterinario(Base):
     telefono = Column(CHAR(9), nullable=False)
     email = Column(String(100), unique=True, nullable=False)
     fecha_ingreso = Column(Date, nullable=False)
-    disposicion = Column(SQLEnum('Ocupado', 'Libre', name='disposicion_enum'), default='Libre')
+    disposicion = Column(SQLEnum('Ocupado', 'Fuera de turno', 'Libre', name='disposicion_enum'), default='Libre')
     turno = Column(SQLEnum('Mañana', 'Tarde', 'Noche', name='turno_enum'), nullable=False)
 
     usuario = relationship("Usuario", back_populates="veterinario")

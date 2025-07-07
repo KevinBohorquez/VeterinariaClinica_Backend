@@ -58,8 +58,8 @@ class VeterinarioCreate(BaseModel):
 
     @validator('disposicion')
     def validate_disposicion(cls, v):
-        if v not in ['Libre', 'Ocupado']:
-            raise ValueError('Disposición debe ser Libre u Ocupado')
+        if v not in ['Libre', 'Ocupado', 'Fuera de turno']:
+            raise ValueError('Disposición debe ser Libre u Ocupado u Fuera de turno')
         return v
 
 
