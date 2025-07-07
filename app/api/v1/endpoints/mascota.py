@@ -242,11 +242,14 @@ async def update_mascota(
     return mascota.update(db, db_obj=mascota_obj, obj_in=mascota_data)
 
 
-@router.get("/mascotas")
-async def get_all_mascotas(db: Session = Depends(get_db)):
+@router.get("/info/{mascota_id}")
+async def get_mascota_by_id(mascota_id: int, db: Session = Depends(get_db)):
+    """
+    Obtener los detalles de una mascota específica: nombre, especie, raza, género, color, etc.
+    """
     try:
-        # Query corregido
-        mascotas = db.query(
+        # Obtener la mascota por id
+        mascota = db.query(
             Mascota.id_mascota,
             Mascota.nombre,
             Raza.nombre_raza.label('raza'),
@@ -261,32 +264,30 @@ async def get_all_mascotas(db: Session = Depends(get_db)):
             Raza, Mascota.id_raza == Raza.id_raza
         ).join(
             TipoAnimal, Raza.id_raza == TipoAnimal.id_raza
-        ).all()
+        ).filter(Mascota.id_mascota == mascota_id).first()
 
-        if not mascotas:
-            raise HTTPException(status_code=404, detail="No hay mascotas registradas")
+        if not mascota:
+            raise HTTPException(status_code=404, detail="Mascota no encontrada")
 
-        # Formatear los resultados para devolverlos como un JSON más legible
-        result = [
-            {
-                "id_mascota": mascota.id_mascota,
-                "nombre": mascota.nombre,
-                "especie": mascota.especie,
-                "raza": mascota.raza,
-                "genero": mascota.genero,
-                "color": mascota.color,
-                "edad_anios": mascota.edad_anios,
-                "edad_meses": mascota.edad_meses,
-                "esterilizado": mascota.esterilizado,
-                "imagen": mascota.imagen
-            }
-            for mascota in mascotas
-        ]
+        # Formatear la respuesta
+        result = {
+            "id_mascota": mascota.id_mascota,
+            "nombre": mascota.nombre,
+            "especie": mascota.especie,
+            "raza": mascota.raza,
+            "genero": mascota.genero,
+            "color": mascota.color,
+            "edad_anios": mascota.edad_anios,
+            "edad_meses": mascota.edad_meses,
+            "esterilizado": mascota.esterilizado,
+            "imagen": mascota.imagen
+        }
 
         return result
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error al obtener las mascotas: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error al obtener la mascota: {str(e)}")
+
 
 
 @router.delete("/{mascota_id}")
