@@ -1035,43 +1035,55 @@ async def get_diagnosticos_by_consulta(
             detail=f"Error al obtener diagnósticos: {str(e)}"
         )
 
+
 @router.get("/diagnostico/{id_diagnostico}/info", response_model=List[dict])
 async def get_tratamiento_patologia_by_diagnostico(
-    id_diagnostico: int,
-    db: Session = Depends(get_db)
+        id_diagnostico: int,
+        db: Session = Depends(get_db)
 ):
     """
     Obtener tratamiento y patología relacionados a un diagnóstico dado su id_diagnostico
     """
     try:
-        # Realizamos la consulta para obtener los tratamientos y patologías relacionados al diagnóstico
-        tratamiento_patologia = db.query(Tratamiento, Patologia) \
+        # Realizamos la consulta para obtener los tratamientos, patologías y diagnósticos relacionados
+        tratamiento_patologia_diagnostico = db.query(Tratamiento, Patologia, Diagnostico) \
             .join(Patologia, Patologia.id_patologia == Tratamiento.id_patologia) \
             .join(Diagnostico, Diagnostico.id_patologia == Patologia.id_patologia) \
             .filter(Diagnostico.id_diagnostico == id_diagnostico) \
             .all()
 
-        if not tratamiento_patologia:
+        if not tratamiento_patologia_diagnostico:
             raise HTTPException(
                 status_code=404,
-                detail="No se encontraron tratamientos o patologías para este diagnóstico"
+                detail="No se encontraron tratamientos, patologías o diagnósticos para este diagnóstico"
             )
 
         # Devolver la respuesta mapeando los resultados
         return [
             {
                 "id_tratamiento": t.id_tratamiento,
+                "id_consulta": t.id_consulta,
                 "id_patologia": p.id_patologia,
                 "nombre_patologia": p.nombre_patologia,
+                "especie_afecta": p.especie_afecta,
+                "gravedad": p.gravedad,
+                "es_cronica": p.es_cronica,
+                "es_contagiosa": p.es_contagiosa,
                 "fecha_inicio_tratamiento": t.fecha_inicio,
+                "eficacia_tratamiento": t.eficacia_tratamiento,
                 "tipo_tratamiento": t.tipo_tratamiento,
-                "eficacia_tratamiento": t.eficacia_tratamiento
+
+                # Información adicional del diagnóstico
+                "tipo_diagnostico": d.tipo_diagnostico,
+                "fecha_diagnostico": d.fecha_diagnostico,
+                "estado_patologia": d.estado_patologia,
+                "diagnostico": d.diagnostico
             }
-            for t, p in tratamiento_patologia
+            for t, p, d in tratamiento_patologia_diagnostico
         ]
 
     except Exception as e:
         raise HTTPException(
             status_code=500,
-            detail=f"Error al obtener tratamiento y patología: {str(e)}"
+            detail=f"Error al obtener tratamiento, patología y diagnóstico: {str(e)}"
         )
