@@ -1,16 +1,19 @@
 # app/api/v1/endpoints/mascotas.py (CORREGIDO)
 from fastapi import APIRouter, Depends, HTTPException, status, Query
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 from typing import Optional
 
 from app.config.database import get_db
 from app.crud import mascota, cliente
+from app.models import SolicitudAtencion, Recepcionista, Cita, Servicio, ServicioSolicitado
 from app.models.mascota import Mascota
 from app.models.cliente_mascota import ClienteMascota
 from app.schemas import (
     MascotaCreate, MascotaUpdate, MascotaResponse, MascotaSearch
 )
 from app.api.deps import get_mascota_or_404
+import datetime
 
 router = APIRouter()
 
@@ -329,3 +332,107 @@ async def get_mascotas_no_esterilizadas(
         "mascotas_no_esterilizadas": mascotas,
         "total": len(mascotas)
     }
+
+@router.get("/proxima-cita/{mascota_id}")
+async def get_proxima_cita_mascota(
+    mascota_id: int,
+    db: Session = Depends(get_db)
+):
+    """
+    Obtener la próxima cita programada de una mascota específica
+    """
+    try:
+        # JOIN para obtener la próxima cita (fecha futura más cercana)
+        proxima_cita = db.query(
+            Cita.id_cita,
+            Cita.fecha_hora_programada,
+            Cita.estado_cita,
+            Servicio.nombre_servicio
+        ).join(
+            ServicioSolicitado, Cita.id_servicio_solicitado == ServicioSolicitado.id_servicio_solicitado
+        ).join(
+            Servicio, ServicioSolicitado.id_servicio == Servicio.id_servicio
+        ).filter(
+            Cita.id_mascota == mascota_id,
+            Cita.estado_cita == 'Programada',
+            Cita.fecha_hora_programada > datetime.now()  # Solo citas futuras
+        ).order_by(
+            Cita.fecha_hora_programada.asc()  # La más próxima primero
+        ).first()
+
+        if not proxima_cita:
+            return {
+                "mascota_id": mascota_id,
+                "proxima_cita": None,
+                "fecha_hora_programada": None,
+                "servicio": "--",
+                "mensaje": "No hay citas programadas"
+            }
+
+        return {
+            "mascota_id": mascota_id,
+            "proxima_cita": proxima_cita.id_cita,
+            "fecha_hora_programada": proxima_cita.fecha_hora_programada,
+            "servicio": proxima_cita.nombre_servicio,
+            "estado": proxima_cita.estado_cita
+        }
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error al obtener próxima cita: {str(e)}"
+        )
+
+
+@router.get("/ultima-atencion/{mascota_id}")
+async def get_ultima_atencion_mascota(
+    mascota_id: int,
+    db: Session = Depends(get_db)
+):
+    """
+    Obtener la última atención recibida por una mascota específica
+    """
+    try:
+        # JOIN para obtener la última solicitud de atención
+        ultima_atencion = db.query(
+            SolicitudAtencion.id_solicitud,
+            SolicitudAtencion.fecha_hora_solicitud,
+            SolicitudAtencion.tipo_solicitud,
+            SolicitudAtencion.estado,
+            func.concat(
+                Recepcionista.nombre, ' ',
+                Recepcionista.apellido_paterno
+            ).label('recepcionista')
+        ).join(
+            Recepcionista, SolicitudAtencion.id_recepcionista == Recepcionista.id_recepcionista
+        ).filter(
+            SolicitudAtencion.id_mascota == mascota_id,
+            SolicitudAtencion.estado.in_(['Completada', 'En atencion'])  # Solo atenciones reales
+        ).order_by(
+            SolicitudAtencion.fecha_hora_solicitud.desc()  # La más reciente primero
+        ).first()
+
+        if not ultima_atencion:
+            return {
+                "mascota_id": mascota_id,
+                "ultima_atencion": None,
+                "fecha_hora_solicitud": None,
+                "tipo_solicitud": "--",
+                "recepcionista": "--",
+                "mensaje": "No hay atenciones registradas"
+            }
+
+        return {
+            "mascota_id": mascota_id,
+            "ultima_atencion": ultima_atencion.id_solicitud,
+            "fecha_hora_solicitud": ultima_atencion.fecha_hora_solicitud,
+            "tipo_solicitud": ultima_atencion.tipo_solicitud,
+            "estado": ultima_atencion.estado,
+            "recepcionista": ultima_atencion.recepcionista
+        }
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error al obtener última atención: {str(e)}"
+        )
