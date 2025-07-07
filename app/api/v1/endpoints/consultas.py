@@ -1046,8 +1046,8 @@ async def get_tratamiento_patologia_by_diagnostico(
     try:
         # Realizamos la consulta para obtener los tratamientos y patologías relacionados al diagnóstico
         tratamiento_patologia = db.query(Tratamiento, Patologia) \
-            .join(Patologia, Patologia.id_patologia == Tratamiento.id_patologia) \
-            .join(Diagnostico, Diagnostico.id_patologia == Patologia.id_patologia) \
+            .join(Patologia, Patologia.id_patología == Tratamiento.id_patologia) \
+            .join(Diagnostico, Diagnostico.id_patologia == Patologia.id_patología) \
             .filter(Diagnostico.id_diagnostico == id_diagnostico) \
             .all()
 
