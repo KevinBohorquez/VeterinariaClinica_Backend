@@ -842,7 +842,7 @@ async def get_historial_clinico_mascota(
         )
 
 
-@router.get("/cita/{cita_id}")
+@router.get("/citaServicio/{cita_id}")
 async def get_cita_by_id( cita_id: int, db: Session = Depends(get_db)):
     try:
         # Obtener la cita con el servicio asociado
