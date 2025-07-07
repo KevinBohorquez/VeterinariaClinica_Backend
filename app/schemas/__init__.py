@@ -17,13 +17,13 @@ from .mascota_schema import (
 )
 
 from .veterinario_schema import (
-    VeterinarioCreate, VeterinarioUpdate, VeterinarioLogin,
+    VeterinarioCreate, VeterinarioUpdate,
     VeterinarioResponse, VeterinarioWithEspecialidadResponse,
     VeterinarioListResponse, VeterinarioSearch
 )
 
 from .recepcionista_schema import (
-    RecepcionistaCreate, RecepcionistaUpdate, RecepcionistaLogin,
+    RecepcionistaCreate, RecepcionistaUpdate,
     RecepcionistaResponse, RecepcionistaListResponse, RecepcionistaSearch
 )
 
@@ -74,12 +74,12 @@ __all__ = [
     "MascotaWithRazaResponse", "MascotaCompleteResponse",
 
     # Veterinario
-    "VeterinarioCreate", "VeterinarioUpdate", "VeterinarioLogin",
+    "VeterinarioCreate", "VeterinarioUpdate",
     "VeterinarioResponse", "VeterinarioWithEspecialidadResponse",
     "VeterinarioListResponse", "VeterinarioSearch",
 
     # Recepcionista
-    "RecepcionistaCreate", "RecepcionistaUpdate", "RecepcionistaLogin",
+    "RecepcionistaCreate", "RecepcionistaUpdate",
     "RecepcionistaResponse", "RecepcionistaListResponse", "RecepcionistaSearch",
 
     # Catálogos
