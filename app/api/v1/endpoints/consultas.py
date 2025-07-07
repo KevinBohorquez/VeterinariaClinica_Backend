@@ -21,7 +21,7 @@ from app.schemas.consulta_schema import (
     DiagnosticoCreate, DiagnosticoResponse,
     TratamientoCreate, TratamientoResponse,
     HistorialClinicoCreate, HistorialClinicoResponse, SolicitudAtencionResponse, SolicitudAtencionCreate, CitaResponse,
-    CitaCreate, TriajeResponse, TriajeCreate, ConsultaUpdate
+    CitaCreate, TriajeResponse, TriajeCreate, ConsultaUpdate, ResultadoServicioResponse, ResultadoServicioCreate
 )
 from app.schemas.base_schema import MessageResponse
 
@@ -921,3 +921,49 @@ async def get_mascota_from_cita(cita_id: int, db: Session = Depends(get_db)):
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error al obtener cita: {str(e)}")
+
+
+@router.get("/resultado_servicio/{cita_id}", response_model=ResultadoServicioResponse)
+async def get_resultado_servicio(cita_id: int, db: Session = Depends(get_db)):
+    # Buscar el resultado del servicio para la cita específica
+    resultado_servicio = db.query(ResultadoServicio).filter(ResultadoServicio.id_cita == cita_id).first()
+
+    if not resultado_servicio:
+        raise HTTPException(status_code=404, detail="Resultado del servicio no encontrado para esta cita")
+
+    return ResultadoServicioResponse(
+        id_resultado=resultado_servicio.id_resultado,
+        id_cita=resultado_servicio.id_cita,
+        id_veterinario=resultado_servicio.id_veterinario,
+        resultado=resultado_servicio.resultado,
+        interpretacion=resultado_servicio.interpretacion,
+        archivo_adjunto=resultado_servicio.archivo_adjunto,
+        fecha_realizacion=resultado_servicio.fecha_realizacion
+    )
+
+@router.put("/resultado_servicio/{cita_id}", response_model=ResultadoServicioResponse)
+async def update_resultado_servicio(cita_id: int, resultado_servicio_update: ResultadoServicioCreate, db: Session = Depends(get_db)):
+    # Buscar el resultado del servicio para la cita específica
+    resultado_servicio = db.query(ResultadoServicio).filter(ResultadoServicio.id_cita == cita_id).first()
+
+    if not resultado_servicio:
+        raise HTTPException(status_code=404, detail="Resultado del servicio no encontrado para esta cita")
+
+    # Actualizar los campos del resultado de servicio
+    resultado_servicio.resultado = resultado_servicio_update.resultado
+    resultado_servicio.interpretacion = resultado_servicio_update.interpretacion
+    resultado_servicio.archivo_adjunto = resultado_servicio_update.archivo_adjunto
+    resultado_servicio.fecha_realizacion = resultado_servicio_update.fecha_realizacion
+
+    db.commit()
+    db.refresh(resultado_servicio)
+
+    return ResultadoServicioResponse(
+        id_resultado=resultado_servicio.id_resultado,
+        id_cita=resultado_servicio.id_cita,
+        id_veterinario=resultado_servicio.id_veterinario,
+        resultado=resultado_servicio.resultado,
+        interpretacion=resultado_servicio.interpretacion,
+        archivo_adjunto=resultado_servicio.archivo_adjunto,
+        fecha_realizacion=resultado_servicio.fecha_realizacion
+    )

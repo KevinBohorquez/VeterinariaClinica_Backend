@@ -379,6 +379,25 @@ class ResultadoServicioResponse(BaseResponse):
     fecha_realizacion: datetime
 
 
+class ResultadoServicioUpdate(BaseModel):
+    """Schema para actualizar el resultado de servicio"""
+
+    resultado: Optional[str] = None
+    interpretacion: Optional[str] = None
+    archivo_adjunto: Optional[str] = None
+    fecha_realizacion: Optional[datetime] = None
+
+    class Config:
+        min_anystr_length = 3  # Si se aplica a otros campos de longitud mínima
+        anystr_strip_whitespace = True  # Eliminar espacios al principio y final
+
+    # Validador para el campo 'resultado'
+    @classmethod
+    def validate_resultado(cls, v: str) -> str:
+        if len(v.strip()) < 5:
+            raise ValueError('El resultado debe tener al menos 5 caracteres')
+        return v.strip()
+
 # ===== HISTORIAL CLÍNICO =====
 
 class HistorialClinicoCreate(BaseModel):
