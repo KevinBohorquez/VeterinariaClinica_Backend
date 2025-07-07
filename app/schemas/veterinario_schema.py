@@ -22,7 +22,6 @@ class VeterinarioCreate(BaseModel):
     fecha_ingreso: date
     turno: str  # 'Mañana', 'Tarde', 'Noche'
     contraseña: str
-    estado: str = "Activo"
     disposicion: str = "Libre"
     
     # Validators
@@ -70,7 +69,6 @@ class VeterinarioUpdate(BaseModel):
     tipo_veterinario: Optional[str] = None
     telefono: Optional[str] = None
     email: Optional[EmailStr] = None
-    estado: Optional[str] = None
     disposicion: Optional[str] = None
     turno: Optional[str] = None
     contraseña: Optional[str] = None
@@ -98,7 +96,6 @@ class VeterinarioResponse(BaseResponse):
     dni: str
     telefono: str
     email: str
-    estado: str
     fecha_ingreso: date
     disposicion: str
     turno: str
@@ -123,7 +120,6 @@ class VeterinarioSearch(BaseModel):
     dni: Optional[str] = None
     id_especialidad: Optional[int] = None
     tipo_veterinario: Optional[str] = None
-    estado: Optional[str] = None
     disposicion: Optional[str] = None
     turno: Optional[str] = None
     page: int = 1

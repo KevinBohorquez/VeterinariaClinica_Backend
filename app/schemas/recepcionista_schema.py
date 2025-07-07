@@ -16,7 +16,6 @@ class RecepcionistaCreate(BaseModel):
     email: EmailStr
     fecha_ingreso: Optional[date] = None
     turno: Optional[str] = None  # 'Mañana', 'Tarde', 'Noche'
-    estado: Optional[str] = "Activo"
     contraseña: str
     genero: str  # 'F' o 'M'
     
@@ -32,12 +31,7 @@ class RecepcionistaCreate(BaseModel):
         if v and v not in ['Mañana', 'Tarde', 'Noche']:
             raise ValueError('Turno debe ser Mañana, Tarde o Noche')
         return v
-    
-    @validator('estado')
-    def validate_estado(cls, v):
-        if v and v not in ['Activo', 'Inactivo']:
-            raise ValueError('Estado debe ser Activo o Inactivo')
-        return v
+
     
     @validator('genero')
     def validate_genero(cls, v):
@@ -54,7 +48,6 @@ class RecepcionistaUpdate(BaseModel):
     telefono: Optional[str] = None
     email: Optional[EmailStr] = None
     turno: Optional[str] = None
-    estado: Optional[str] = None
     contraseña: Optional[str] = None
     
     # Validators similares a Create
@@ -83,7 +76,6 @@ class RecepcionistaResponse(BaseResponse):
     email: str
     fecha_ingreso: Optional[date]
     turno: Optional[str]
-    estado: Optional[str]
     genero: str
     # Nota: NO incluimos contraseña por seguridad
 
@@ -99,7 +91,6 @@ class RecepcionistaSearch(BaseModel):
     """Schema para búsqueda de recepcionistas"""
     nombre: Optional[str] = None
     dni: Optional[str] = None
-    estado: Optional[str] = None
     turno: Optional[str] = None
     page: int = 1
     per_page: int = 20

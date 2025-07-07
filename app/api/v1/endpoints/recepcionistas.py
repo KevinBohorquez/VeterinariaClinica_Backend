@@ -305,15 +305,6 @@ async def delete_recepcionista(
                 detail="Recepcionista no encontrada"
             )
 
-        # Verificar si tiene tareas pendientes o está activa
-        if recepcionista_obj.estado == "Activo":
-            # Opcional: puedes hacer soft delete en lugar de hard delete
-            # recepcionista.soft_delete(db, id=recepcionista_id)
-            # return {"message": "Recepcionista desactivada exitosamente", "recepcionista_id": recepcionista_id}
-
-            # O permitir eliminar activas con warning
-            pass
-
         # Eliminar la recepcionista (hard delete)
         recepcionista.remove(db, id=recepcionista_id)
 

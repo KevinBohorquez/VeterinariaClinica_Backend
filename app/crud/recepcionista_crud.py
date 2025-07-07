@@ -36,8 +36,6 @@ class CRUDRecepcionista(CRUDBase[Recepcionista, RecepcionistaCreate, Recepcionis
         if search_params.dni:
             query = query.filter(Recepcionista.dni == search_params.dni)
 
-        if search_params.estado:
-            query = query.filter(Recepcionista.estado == search_params.estado)
 
         if search_params.turno:
             query = query.filter(Recepcionista.turno == search_params.turno)
@@ -66,39 +64,6 @@ class CRUDRecepcionista(CRUDBase[Recepcionista, RecepcionistaCreate, Recepcionis
             query = query.filter(Recepcionista.id_recepcionista != exclude_id)
         return query.first() is not None
 
-    def get_by_turno(self, db: Session, *, turno: str, estado: str = "Activo") -> List[Recepcionista]:
-        """Obtener recepcionistas por turno y estado"""
-        query = db.query(Recepcionista).filter(Recepcionista.turno == turno)
-        if estado:
-            query = query.filter(Recepcionista.estado == estado)
-        return query.all()
-
-    def cambiar_estado(self, db: Session, *, recepcionista_id: int, nuevo_estado: str) -> Optional[Recepcionista]:
-        """Cambiar el estado de una recepcionista"""
-        recepcionista_obj = db.query(Recepcionista).filter(Recepcionista.id_recepcionista == recepcionista_id).first()
-        if recepcionista_obj:
-            recepcionista_obj.estado = nuevo_estado
-            db.commit()
-            db.refresh(recepcionista_obj)
-        return recepcionista_obj
-
-    def get_estadisticas_por_turno(self, db: Session) -> List[dict]:
-        """Obtener estadísticas de recepcionistas agrupadas por turno"""
-        return db.query(
-            Recepcionista.turno,
-            db.func.count(Recepcionista.id_recepcionista).label('total'),
-            db.func.sum(db.case([(Recepcionista.estado == 'Activo', 1)], else_=0)).label('activas'),
-            db.func.sum(db.case([(Recepcionista.estado == 'Inactivo', 1)], else_=0)).label('inactivas')
-        ).group_by(Recepcionista.turno).all()
-
-    def soft_delete(self, db: Session, *, id: int) -> Optional[Recepcionista]:
-        """Soft delete - cambiar estado a Inactivo"""
-        recepcionista_obj = db.query(Recepcionista).filter(Recepcionista.id_recepcionista == id).first()
-        if recepcionista_obj:
-            recepcionista_obj.estado = "Inactivo"
-            db.commit()
-            db.refresh(recepcionista_obj)
-        return recepcionista_obj
 
 
 # Instancia única

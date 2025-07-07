@@ -40,7 +40,6 @@ class CRUDVeterinario(CRUDBase[Veterinario, VeterinarioCreate, VeterinarioUpdate
         """Obtener veterinarios disponibles (libres y activos)"""
         return db.query(Veterinario).filter(
             and_(
-                Veterinario.estado == "Activo",
                 Veterinario.disposicion == "Libre"
             )
         ).all()
@@ -83,9 +82,7 @@ class CRUDVeterinario(CRUDBase[Veterinario, VeterinarioCreate, VeterinarioUpdate
         
         if search_params.tipo_veterinario:
             query = query.filter(Veterinario.tipo_veterinario == search_params.tipo_veterinario)
-        
-        if search_params.estado:
-            query = query.filter(Veterinario.estado == search_params.estado)
+
         
         if search_params.disposicion:
             query = query.filter(Veterinario.disposicion == search_params.disposicion)
