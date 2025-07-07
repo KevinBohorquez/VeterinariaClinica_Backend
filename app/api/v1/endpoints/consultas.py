@@ -453,6 +453,37 @@ async def get_consultas(
             detail=f"Error al obtener consultas: {str(e)}"
         )
 
+@router.put("/{consulta_id}", response_model=ConsultaResponse)
+async def update_consulta(
+        consulta_id: int,
+        consulta_data: ConsultaUpdate,
+        db: Session = Depends(get_db)
+):
+    """
+    Actualizar una recepcionista existente
+    """
+    try:
+        # Verificar que la consulta existe
+        consulta_obj = consulta.get(db, consulta_id)
+        if not consulta_obj:
+            raise HTTPException(
+                status_code=404,
+                detail="Consulta no encontrada"
+            )
+
+
+        # Actualizar la recepcionista
+        consulta_actualizada = consulta.update(db, db_obj=consulta_obj, obj_in=consulta_data)
+
+        return consulta_actualizada
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error al actualizar consulta: {str(e)}"
+        )
 
 # ===== RUTAS CON PARÁMETROS AL FINAL =====
 

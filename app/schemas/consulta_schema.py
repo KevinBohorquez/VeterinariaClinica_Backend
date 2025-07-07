@@ -214,6 +214,14 @@ class ConsultaResponse(BaseResponse):
     condicion_general: str
     es_seguimiento: bool
 
+class ConsultaUpdate(BaseModel):
+    tipo_consulta: str
+    motivo_consulta: Optional[str] = None
+    sintomas_observados: Optional[str] = None
+    diagnostico_preliminar: Optional[str] = None
+    observaciones: Optional[str] = None
+    condicion_general: str
+    es_seguimiento: bool = False
 
 # ===== DIAGNÓSTICO =====
 
