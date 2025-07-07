@@ -1067,7 +1067,7 @@ async def get_tratamiento_patologia_by_diagnostico(
                 "nombre_patologia": p.nombre_patologia,
                 "especie_afecta": p.especie_afecta,
                 "gravedad": p.gravedad,
-                "es_crónica": p.es_cronica,
+                "es_crónica": p.es_crónica,
                 "es_contagiosa": p.es_contagiosa,
                 "fecha_inicio_tratamiento": t.fecha_inicio,
                 "eficacia_tratamiento": t.eficacia_tratamiento,
