@@ -6,7 +6,7 @@ from typing import Optional
 
 from app.config.database import get_db
 from app.crud import mascota, cliente
-from app.models import SolicitudAtencion, Recepcionista, Cita, Servicio, ServicioSolicitado
+from app.models import SolicitudAtencion, Recepcionista, Cita, Servicio, ServicioSolicitado, TipoAnimal, Raza
 from app.models.mascota import Mascota
 from app.models.cliente_mascota import ClienteMascota
 from app.schemas import (
@@ -436,3 +436,43 @@ async def get_ultima_atencion_mascota(
             status_code=500,
             detail=f"Error al obtener última atención: {str(e)}"
         )
+
+
+@router.get("/mascotasINFO")
+async def get_all_mascotas(db: Session = Depends(get_db)):
+    """
+    Obtener todas las mascotas con sus detalles: nombre, especie, raza, género, color.
+    """
+    try:
+        # Obtener todas las mascotas junto con su raza y especie (tipo de animal)
+        mascotas = db.query(
+            Mascota.nombre,
+            TipoAnimal.descripcion.label('especie'),
+            Raza.nombre_raza.label('raza'),
+            Mascota.sexo.label('genero'),
+            Mascota.color
+        ).join(
+            Raza, Mascota.id_raza == Raza.id_raza
+        ).join(
+            TipoAnimal, Raza.id_raza == TipoAnimal.id_raza
+        ).all()
+
+        if not mascotas:
+            raise HTTPException(status_code=404, detail="No hay mascotas registradas")
+
+        # Retornar los detalles sin mostrar el ID de la mascota
+        return [
+            {
+                "nombre": mascota.nombre,
+                "especie": mascota.especie,
+                "raza": mascota.raza,
+                "genero": mascota.genero,
+                "color": mascota.color
+            }
+            for mascota in mascotas
+        ]
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error al obtener las mascotas: {str(e)}")
+
+
