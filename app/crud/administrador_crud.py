@@ -1,4 +1,4 @@
-# app/crud/administrador_crud.pyAdd commentMore actions
+# app/crud/administrador_crud.py
 from sqlalchemy.orm import Session
 from sqlalchemy import and_, or_
 from typing import List, Optional, Tuple, Dict, Any
@@ -9,6 +9,10 @@ from app.schemas.administrador_schema import AdministradorCreate, AdministradorU
 
 
 class CRUDAdministrador(CRUDBase[Administrador, AdministradorCreate, AdministradorUpdate]):
+
+    def get(self, db: Session, id: Any) -> Optional[Administrador]:
+        """Obtener administrador por ID - override para especificar campo correcto"""
+        return db.query(Administrador).filter(Administrador.id_administrador == id).first()
 
     def get_by_dni(self, db: Session, *, dni: str) -> Optional[Administrador]:
         """Obtener administrador por DNI"""
@@ -243,4 +247,3 @@ class CRUDAdministrador(CRUDBase[Administrador, AdministradorCreate, Administrad
 
 
 # Instancia única
-administrador = CRUDAdministrador(Administrador)

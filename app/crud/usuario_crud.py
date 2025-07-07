@@ -1,4 +1,4 @@
-# app/crud/usuario_crud.pyAdd commentMore actions
+# app/crud/usuario_crud.py
 from sqlalchemy.orm import Session
 from sqlalchemy import and_, or_
 from typing import List, Optional, Tuple, Dict, Any
@@ -11,6 +11,10 @@ from app.schemas.usuario_schema import UsuarioCreate, UsuarioUpdate, UsuarioSear
 
 
 class CRUDUsuario(CRUDBase[Usuario, UsuarioCreate, UsuarioUpdate]):
+
+    def get(self, db: Session, id: Any) -> Optional[Usuario]:
+        """Obtener usuario por ID - override para especificar campo correcto"""
+        return db.query(Usuario).filter(Usuario.id_usuario == id).first()
 
     def get_by_username(self, db: Session, *, username: str) -> Optional[Usuario]:
         """Obtener usuario por username"""
@@ -258,4 +262,3 @@ class CRUDUsuario(CRUDBase[Usuario, UsuarioCreate, UsuarioUpdate]):
 
 
 # Instancia única
-usuario = CRUDUsuario(Usuario)

@@ -18,7 +18,7 @@ from app.schemas.consulta_schema import (
     DiagnosticoCreate, DiagnosticoResponse,
     TratamientoCreate, TratamientoResponse,
     HistorialClinicoCreate, HistorialClinicoResponse, SolicitudAtencionResponse, SolicitudAtencionCreate, CitaResponse,
-    CitaCreate, TriajeResponse, TriajeCreate
+    CitaCreate, TriajeResponse, TriajeCreate, ConsultaUpdate
 )
 from app.schemas.base_schema import MessageResponse
 
