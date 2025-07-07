@@ -22,6 +22,7 @@ from app.api.v1.endpoints.catalogos import router as catalogos_router
 from app.api.v1.endpoints.consultas import router as consultas_router
 from app.api.v1.endpoints.solicitudes import router as solicitudes_router
 from app.api.v1.endpoints.triaje import router as triaje_router
+from app.api.v1.endpoints.servicio_solicitado import router as servicio_solicitado_router
 app = FastAPI(
     title="🏥 Sistema Veterinaria API Completo",
     description="API integral para gestión de veterinaria con autenticación y todos los módulos",
@@ -61,6 +62,8 @@ app.include_router(catalogos_router, prefix="/api/v1/catalogos", tags=["📋 cat
 # Procesos clínicos
 app.include_router(consultas_router, prefix="/api/v1/consultas", tags=["🏥 consultas"])
 app.include_router(triaje_router, prefix="/api/v1/triaje", tags=["🏥 Triaje"])
+
+app.include_router(servicio_solicitado_router, prefix="/api/v1/servicio_solicitado", tags=["🏥 Servicio_solicitado"])
 
 app.include_router(solicitudes_router, prefix="/api/v1/solicitudes", tags=["🏥 Solicitudes"])
 # ===== ENDPOINTS PRINCIPALES =====
