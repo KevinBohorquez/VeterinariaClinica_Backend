@@ -350,6 +350,23 @@ class ServicioSolicitadoResponse(BaseResponse):
     comentario_opcional: Optional[str]
 
 
+class ServicioSolicitadoUpdate(BaseModel):
+    """Schema para actualizar servicio solicitado"""
+    id_consulta: Optional[int] = None
+    id_servicio: Optional[int] = None
+    prioridad: Optional[str] = None
+    comentario_opcional: Optional[str] = None
+    fecha_solicitado: Optional[datetime] = None
+
+    @validator('prioridad')
+    def validate_prioridad(cls, v):
+        if v and v not in ['Urgente', 'Normal', 'Programable']:
+            raise ValueError('Prioridad debe ser Urgente, Normal o Programable')
+        return v
+
+    class Config:
+        orm_mode = True  # Permite la conversión de modelos de base de datos a Pydantic
+
 # ===== RESULTADO SERVICIO =====
 
 class ResultadoServicioCreate(BaseModel):

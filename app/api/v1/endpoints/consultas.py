@@ -21,7 +21,8 @@ from app.schemas.consulta_schema import (
     DiagnosticoCreate, DiagnosticoResponse,
     TratamientoCreate, TratamientoResponse,
     HistorialClinicoCreate, HistorialClinicoResponse, SolicitudAtencionResponse, SolicitudAtencionCreate, CitaResponse,
-    CitaCreate, TriajeResponse, TriajeCreate, ConsultaUpdate, ResultadoServicioResponse, ResultadoServicioCreate
+    CitaCreate, TriajeResponse, TriajeCreate, ConsultaUpdate, ResultadoServicioResponse, ResultadoServicioCreate,
+    ServicioSolicitadoUpdate
 )
 from app.schemas.base_schema import MessageResponse
 
@@ -1007,3 +1008,48 @@ async def update_resultado_servicio(cita_id: int, resultado_servicio_update: Res
         archivo_adjunto=resultado_servicio.archivo_adjunto,
         fecha_realizacion=resultado_servicio.fecha_realizacion
     )
+
+@router.get("/servicios_solicitados", response_model=List[ServicioSolicitado])
+async def get_servicios_solicitados(db: Session = Depends(get_db)):
+    """
+    Obtener todos los servicios solicitados
+    """
+    try:
+        servicios = db.query(ServicioSolicitado).all()
+        return servicios
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error al obtener servicios solicitados: {str(e)}")
+
+@router.put("/servicios_solicitados/{id_servicio_solicitado}", response_model=ServicioSolicitado)
+async def update_servicio_solicitado(id_servicio_solicitado: int, servicio_solicitado: ServicioSolicitadoUpdate, db: Session = Depends(get_db)):
+    """
+    Actualizar un servicio solicitado
+    """
+    try:
+        servicio = db.query(ServicioSolicitado).filter(ServicioSolicitado.id_servicio_solicitado == id_servicio_solicitado).first()
+
+        if not servicio:
+            raise HTTPException(status_code=404, detail="Servicio solicitado no encontrado")
+
+        # Actualizar los campos del servicio
+        for key, value in servicio_solicitado.dict(exclude_unset=True).items():
+            setattr(servicio, key, value)
+
+        db.commit()
+        db.refresh(servicio)
+
+        return servicio
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error al actualizar servicio solicitado: {str(e)}")
+
+
+@router.get("/servicios_solicitados/pendientes", response_model=List[ServicioSolicitado])
+async def get_servicios_solicitados_pendientes(db: Session = Depends(get_db)):
+    """
+    Obtener todos los servicios solicitados con estado 'Pendiente' de la cita
+    """
+    try:
+        servicios_pendientes = db.query(ServicioSolicitado).join(Cita).filter(Cita.estado_cita == "Pendiente").all()
+        return servicios_pendientes
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error al obtener servicios solicitados pendientes: {str(e)}")
