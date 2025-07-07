@@ -364,9 +364,6 @@ class ServicioSolicitadoUpdate(BaseModel):
             raise ValueError('Prioridad debe ser Urgente, Normal o Programable')
         return v
 
-    class Config:
-        orm_mode = True  # Permite la conversión de modelos de base de datos a Pydantic
-
 # ===== RESULTADO SERVICIO =====
 
 class ResultadoServicioCreate(BaseModel):
