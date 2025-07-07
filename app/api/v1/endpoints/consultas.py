@@ -12,7 +12,7 @@ from app.crud.consulta_crud import (
     triaje, solicitud_atencion, cita
 )
 from app.crud.veterinario_crud import veterinario
-from app.models import Cita
+from app.models import Cita, ResultadoServicio, ServicioSolicitado
 from app.models.consulta import Consulta
 from app.models.triaje import Triaje
 from app.models.solicitud_atencion import SolicitudAtencion
@@ -871,3 +871,35 @@ async def get_cita_by_id(cita_id: int, db: Session = Depends(get_db)):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error al obtener cita: {str(e)}")
 
+@router.get("/citaVeterinario/{cita_id}")
+async def get_cita_by_id(cita_id: int, db: Session = Depends(get_db)):
+    try:
+        # Obtener la cita con el servicio asociado y veterinario
+        cita = db.query(
+                Cita.id_cita,
+                Cita.fecha_hora_programada,
+                Cita.estado_cita,
+                servicio.nombre_servicio,
+                veterinario.nombre.label("veterinario_nombre"),
+                veterinario.apellido_paterno.label("veterinario_apellido")
+            ) \
+            .join(servicio_solicitado, Cita.id_servicio_solicitado == servicio_solicitado.id_servicio_solicitado) \
+            .join(servicio, ServicioSolicitado.id_servicio == servicio.id_servicio) \
+            .join(ResultadoServicio, ResultadoServicio.id_cita == Cita.id_cita) \
+            .join(veterinario, ResultadoServicio.id_veterinario == veterinario.id_veterinario) \
+            .filter(Cita.id_cita == cita_id) \
+            .first()
+
+        if not cita:
+            raise HTTPException(status_code=404, detail="Cita no encontrada")
+
+        return {
+            "id_cita": cita.id_cita,
+            "fecha_hora_programada": cita.fecha_hora_programada,
+            "estado_cita": cita.estado_cita,
+            "nombre_servicio": cita.nombre_servicio,
+            "veterinario": f"{cita.veterinario_nombre} {cita.veterinario_apellido}"
+        }
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error al obtener cita: {str(e)}")
