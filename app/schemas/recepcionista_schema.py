@@ -16,7 +16,6 @@ class RecepcionistaCreate(BaseModel):
     email: EmailStr
     fecha_ingreso: Optional[date] = None
     turno: Optional[str] = None  # 'Mañana', 'Tarde', 'Noche'
-    contraseña: str
     genero: str  # 'F' o 'M'
     
     # Validators
@@ -48,19 +47,12 @@ class RecepcionistaUpdate(BaseModel):
     telefono: Optional[str] = None
     email: Optional[EmailStr] = None
     turno: Optional[str] = None
-    contraseña: Optional[str] = None
     
     # Validators similares a Create
     _validate_nombre = validator('nombre', allow_reuse=True)(validate_name)
     _validate_apellido_paterno = validator('apellido_paterno', allow_reuse=True)(validate_name)
     _validate_apellido_materno = validator('apellido_materno', allow_reuse=True)(validate_name)
     _validate_telefono = validator('telefono', allow_reuse=True)(validate_telefono)
-
-
-class RecepcionistaLogin(BaseModel):
-    """Schema para login de recepcionista"""
-    email: EmailStr
-    contraseña: str
 
 
 # ===== SCHEMAS DE OUTPUT (RESPONSE) =====

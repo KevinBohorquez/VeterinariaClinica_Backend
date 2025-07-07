@@ -21,7 +21,6 @@ class VeterinarioCreate(BaseModel):
     email: EmailStr
     fecha_ingreso: date
     turno: str  # 'Mañana', 'Tarde', 'Noche'
-    contraseña: str
     disposicion: str = "Libre"
     
     # Validators
@@ -54,12 +53,6 @@ class VeterinarioCreate(BaseModel):
         if v not in ['Mañana', 'Tarde', 'Noche']:
             raise ValueError('Turno debe ser Mañana, Tarde o Noche')
         return v
-    
-    @validator('contraseña')
-    def validate_contraseña(cls, v):
-        if len(v) < 3:
-            raise ValueError('Contraseña debe tener al menos 3 caracteres')
-        return v
 
 
 class VeterinarioUpdate(BaseModel):
@@ -71,13 +64,6 @@ class VeterinarioUpdate(BaseModel):
     email: Optional[EmailStr] = None
     disposicion: Optional[str] = None
     turno: Optional[str] = None
-    contraseña: Optional[str] = None
-
-
-class VeterinarioLogin(BaseModel):
-    """Schema para login de veterinario"""
-    email: EmailStr
-    contraseña: str
 
 
 # ===== SCHEMAS DE OUTPUT (RESPONSE) =====

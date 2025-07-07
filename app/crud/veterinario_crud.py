@@ -21,12 +21,6 @@ class CRUDVeterinario(CRUDBase[Veterinario, VeterinarioCreate, VeterinarioUpdate
         """Obtener veterinario por código CMVP"""
         return db.query(Veterinario).filter(Veterinario.codigo_CMVP == codigo_cmvp).first()
 
-    def authenticate(self, db: Session, *, email: str, password: str) -> Optional[Veterinario]:
-        """Autenticar veterinario (sin hash por simplicidad)"""
-        veterinario = self.get_by_email(db, email=email)
-        if veterinario and veterinario.contraseña == password:
-            return veterinario
-        return None
 
     def get_by_especialidad(self, db: Session, *, especialidad_id: int) -> List[Veterinario]:
         """Obtener veterinarios por especialidad"""
