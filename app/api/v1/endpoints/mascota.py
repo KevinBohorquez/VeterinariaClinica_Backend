@@ -241,13 +241,10 @@ async def update_mascota(
 
     return mascota.update(db, db_obj=mascota_obj, obj_in=mascota_data)
 
-@router.get("/mascotasInfo")
+
 async def get_all_mascotas(db: Session = Depends(get_db)):
-    """
-    Obtener todas las mascotas con sus detalles: nombre, especie, raza, género, color.
-    """
     try:
-        # Obtener todas las mascotas junto con su raza, especie (TipoAnimal) y otra información
+        # Query corregido
         mascotas = db.query(
             Mascota.id_mascota,
             Mascota.nombre,
