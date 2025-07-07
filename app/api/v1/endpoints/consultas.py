@@ -12,7 +12,7 @@ from app.crud.consulta_crud import (
     triaje, solicitud_atencion, cita
 )
 from app.crud.veterinario_crud import veterinario
-from app.models import Cita, ResultadoServicio, ServicioSolicitado, Servicio, Veterinario
+from app.models import Cita, ResultadoServicio, ServicioSolicitado, Servicio, Veterinario, Mascota
 from app.models.consulta import Consulta
 from app.models.triaje import Triaje
 from app.models.solicitud_atencion import SolicitudAtencion
@@ -899,6 +899,24 @@ async def get_cita_by_id(cita_id: int, db: Session = Depends(get_db)):
             "estado_cita": cita.estado_cita,
             "nombre_servicio": cita.nombre_servicio,
             "veterinario": f"{cita.veterinario_nombre} {cita.veterinario_apellido}"
+        }
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error al obtener cita: {str(e)}")
+
+@router.get("/citaMascota/{cita_id}")
+async def get_mascota_from_cita(cita_id: int, db: Session = Depends(get_db)):
+    try:
+        # Realizar el JOIN entre la tabla Cita y Mascota
+        result = db.query(Cita.id_cita, Mascota.nombre).join(Mascota, Cita.id_mascota == Mascota.id_mascota) \
+            .filter(Cita.id_cita == cita_id).first()
+
+        if not result:
+            raise HTTPException(status_code=404, detail="Cita o mascota no encontrada")
+
+        return {
+            "id_cita": result.id_cita,
+            "nombre_mascota": result.nombre
         }
 
     except Exception as e:
