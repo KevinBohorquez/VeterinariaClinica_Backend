@@ -845,32 +845,33 @@ async def get_historial_clinico_mascota(
 
 @router.get("/historialConsultas/{mascota_id}", response_model=List[dict])
 async def get_historial_clinico_mascota(
-        mascota_id: int,
-        db: Session = Depends(get_db),
-        limit: int = Query(50, ge=1, le=500, description="Cantidad máxima de eventos")
+    mascota_id: int,
+    db: Session = Depends(get_db),
+    limit: int = Query(50, ge=1, le=500, description="Cantidad máxima de eventos")
 ):
     """
-    Obtener historial clínico de una mascota, con datos de consulta relacionados
+    Obtener historial clínico de una mascota y sus consultas
     """
     try:
-        # Consultar los eventos en historial clínico relacionados con la mascota,
-        # junto con los datos de la tabla Consulta
-        eventos = db.query(HistorialClinico, Consulta).join(Consulta).join(Triaje).join(SolicitudAtencion).filter(
-            HistorialClinico.id_mascota == mascota_id
-        ).limit(limit).all()
+        # Consultar las consultas relacionadas con la mascota, pasando por Solicitud_atencion, Triaje y Consulta
+        eventos = db.query(Consulta).join(SolicitudAtencion, SolicitudAtencion.id_solicitud == Consulta.id_triaje) \
+            .join(Triaje, Triaje.id_triaje == Consulta.id_triaje) \
+            .join(Mascota, Mascota.id_mascota == SolicitudAtencion.id_mascota) \
+            .filter(Mascota.id_mascota == mascota_id) \
+            .limit(limit).all()
 
         if not eventos:
-            raise HTTPException(status_code=404, detail="No se encontraron eventos para esta mascota")
+            raise HTTPException(status_code=404, detail="No se encontraron consultas para esta mascota")
 
         # Mapear los eventos para devolverlos en el formato adecuado
         return [
             {
-                # Campos de la tabla Consulta
-                "fecha_consulta": e[1].fecha_consulta,
-                "tipo_consulta": e[1].tipo_consulta,
-                "motivo_consulta": e[1].motivo_consulta,
-                "diagnostico_preliminar": e[1].diagnostico_preliminar,
-                "observaciones_consulta": e[1].observaciones
+                "id_consulta": e.id_consulta,
+                "fecha_consulta": e.fecha_consulta,
+                "tipo_consulta": e.tipo_consulta,
+                "motivo_consulta": e.motivo_consulta,
+                "diagnostico_preliminar": e.diagnostico_preliminar,
+                "observaciones": e.observaciones
             }
             for e in eventos
         ]
@@ -878,7 +879,7 @@ async def get_historial_clinico_mascota(
     except Exception as e:
         raise HTTPException(
             status_code=500,
-            detail=f"Error al obtener historial clínico: {str(e)}"
+            detail=f"Error al obtener consultas: {str(e)}"
         )
 
 
