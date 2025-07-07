@@ -8,7 +8,7 @@ class Diagnostico(Base):
 
     id_diagnostico = Column(Integer, primary_key=True, autoincrement=True)
     id_consulta = Column(Integer, ForeignKey('Consulta.id_consulta'))
-    id_patologia = Column(Integer, ForeignKey('Patología.id_patología'))
+    id_patologia = Column(Integer, ForeignKey('Patologia.id_patologia'))
     
     tipo_diagnostico = Column(SQLEnum(
         'Presuntivo', 

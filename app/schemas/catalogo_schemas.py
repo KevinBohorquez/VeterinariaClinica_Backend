@@ -138,7 +138,7 @@ class PatologiaCreate(BaseModel):
     @validator('nombre_patologia')
     def validate_nombre_patologia(cls, v):
         if len(v.strip()) < 3:
-            raise ValueError('Nombre de patología debe tener al menos 3 caracteres')
+            raise ValueError('Nombre de patologia debe tener al menos 3 caracteres')
         return v.strip().title()
     
     @validator('especie_afecta')
@@ -156,7 +156,7 @@ class PatologiaCreate(BaseModel):
 
 class PatologiaResponse(BaseResponse):
     """Schema para devolver información de patología"""
-    id_patología: int
+    id_patologia: int
     nombre_patologia: str
     especie_afecta: str
     gravedad: str

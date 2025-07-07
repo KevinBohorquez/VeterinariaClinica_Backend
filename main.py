@@ -79,7 +79,7 @@ async def root():
         "👤 usuarios": "/api/v1/usuarios - Gestión de usuarios del sistema",
         "👑 administradores": "/api/v1/administradores - Gestión de administradores",
         "🐕 mascotas": "/api/v1/mascotas - Gestión de mascotas",
-        "📋 catálogos": "/api/v1/catalogos - Razas, especialidades, servicios, patologías",
+        "📋 catálogos": "/api/v1/catalogos - Razas, especialidades, servicios, patologias",
         "🏥 consultas": "/api/v1/consultas - Procesos clínicos completos"
     }
 

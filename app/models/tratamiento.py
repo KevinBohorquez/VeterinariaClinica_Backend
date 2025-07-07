@@ -8,7 +8,7 @@ class Tratamiento(Base):
 
     id_tratamiento = Column(Integer, primary_key=True, autoincrement=True)
     id_consulta = Column(Integer, ForeignKey('Consulta.id_consulta'))
-    id_patologia = Column(Integer, ForeignKey('Patología.id_patología'))
+    id_patologia = Column(Integer, ForeignKey('Patologia.id_patologia'))
     
     fecha_inicio = Column(Date, nullable=False)
     eficacia_tratamiento = Column(SQLEnum(

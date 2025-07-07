@@ -446,7 +446,7 @@ class CRUDPatologia(CRUDBase[Patologia, PatologiaCreate, None]):
         """Verificar si existe una patología con ese nombre"""
         query = db.query(Patologia).filter(Patologia.nombre_patologia == nombre_patologia)
         if exclude_id:
-            query = query.filter(Patologia.id_patología != exclude_id)
+            query = query.filter(Patologia.id_patologia != exclude_id)
         return query.first() is not None
 
     def get_estadisticas(self, db: Session) -> Dict[str, Any]:
@@ -471,7 +471,7 @@ class CRUDPatologia(CRUDBase[Patologia, PatologiaCreate, None]):
         # Por gravedad
         por_gravedad = db.query(
             Patologia.gravedad,
-            func.count(Patologia.id_patología).label('total')
+            func.count(Patologia.id_patologia).label('total')
         ).group_by(Patologia.gravedad).all()
         
         # Características especiales
@@ -498,18 +498,18 @@ class CRUDPatologia(CRUDBase[Patologia, PatologiaCreate, None]):
         from app.models.diagnostico import Diagnostico
         
         resultado = db.query(
-            Patologia.id_patología,
+            Patologia.id_patologia,
             Patologia.nombre_patologia,
             Patologia.gravedad,
             func.count(Diagnostico.id_diagnostico).label('total_diagnosticos')
-        ).outerjoin(Diagnostico, Patologia.id_patología == Diagnostico.id_patologia)\
-         .group_by(Patologia.id_patología, Patologia.nombre_patologia, Patologia.gravedad)\
+        ).outerjoin(Diagnostico, Patologia.id_patologia == Diagnostico.id_patologia)\
+         .group_by(Patologia.id_patologia, Patologia.nombre_patologia, Patologia.gravedad)\
          .order_by(func.count(Diagnostico.id_diagnostico).desc())\
          .limit(limit).all()
         
         return [
             {
-                "id_patologia": r.id_patología,
+                "id_patologia": r.id_patologia,
                 "nombre_patologia": r.nombre_patologia,
                 "gravedad": r.gravedad,
                 "total_diagnosticos": r.total_diagnosticos or 0

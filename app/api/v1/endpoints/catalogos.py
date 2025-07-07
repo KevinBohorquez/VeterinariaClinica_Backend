@@ -1360,7 +1360,7 @@ async def debug_catalogos_info(db: Session = Depends(get_db)):
             ("Especialidad", Especialidad),
             ("Tipo_servicio", TipoServicio),
             ("Servicio", Servicio),
-            ("Patología", Patologia),
+            ("Patologia", Patologia),
             ("Cliente_Mascota", ClienteMascota)
         ]
 

@@ -4,9 +4,9 @@ from app.models.base import Base
 
 
 class Patologia(Base):
-    __tablename__ = "Patología"
+    __tablename__ = "Patologia"
 
-    id_patología = Column(Integer, primary_key=True, autoincrement=True)
+    id_patologia = Column(Integer, primary_key=True, autoincrement=True)
     nombre_patologia = Column(String(100), nullable=False, unique=True)
     especie_afecta = Column(SQLEnum('Perro', 'Gato', 'Ambas', name='especie_afecta_enum'), nullable=False)
     gravedad = Column(SQLEnum(

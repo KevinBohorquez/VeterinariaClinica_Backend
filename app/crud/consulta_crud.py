@@ -274,8 +274,8 @@ class CRUDDiagnostico(CRUDBase[Diagnostico, DiagnosticoCreate, None]):
         resultado = db.query(
             Patologia.nombre_patologia,
             func.count(Diagnostico.id_diagnostico).label('total_diagnosticos')
-        ).join(Patologia, Diagnostico.id_patologia == Patologia.id_patología) \
-            .group_by(Patologia.id_patología, Patologia.nombre_patologia) \
+        ).join(Patologia, Diagnostico.id_patologia == Patologia.id_patologia) \
+            .group_by(Patologia.id_patologia, Patologia.nombre_patologia) \
             .order_by(func.count(Diagnostico.id_diagnostico).desc()) \
             .limit(limit).all()
 

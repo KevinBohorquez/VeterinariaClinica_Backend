@@ -187,10 +187,10 @@ class CRUDReportes:
             Patologia.nombre_patologia,
             Patologia.gravedad,
             func.count(Diagnostico.id_diagnostico).label('total_diagnosticos')
-        ).join(Diagnostico, Patologia.id_patología == Diagnostico.id_patologia)\
+        ).join(Diagnostico, Patologia.id_patologia == Diagnostico.id_patologia)\
          .join(Consulta, Diagnostico.id_consulta == Consulta.id_consulta)\
          .filter(Consulta.fecha_consulta.between(fecha_inicio, fecha_fin))\
-         .group_by(Patologia.id_patología, Patologia.nombre_patologia, Patologia.gravedad)\
+         .group_by(Patologia.id_patologia, Patologia.nombre_patologia, Patologia.gravedad)\
          .order_by(func.count(Diagnostico.id_diagnostico).desc())\
          .limit(10).all()
         
