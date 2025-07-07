@@ -12,6 +12,7 @@ from app.crud.consulta_crud import (
     triaje, solicitud_atencion, cita
 )
 from app.crud.veterinario_crud import veterinario
+from app.models import Cita
 from app.models.consulta import Consulta
 from app.models.triaje import Triaje
 from app.models.solicitud_atencion import SolicitudAtencion
@@ -843,23 +844,30 @@ async def get_historial_clinico_mascota(
 
 
 @router.get("/citaServicio/{cita_id}")
-async def get_cita_by_id( cita_id: int, db: Session = Depends(get_db)):
+async def get_cita_by_id(cita_id: int, db: Session = Depends(get_db)):
     try:
-        # Obtener la cita con el servicio asociado
-        from app.crud.consulta_crud import cita
-        cita = db.query(cita.id_cita, cita.fecha_hora_programada, cita.estado_cita, servicio.nombre_servicio) \
-                 .join(servicio_solicitado, cita.id_servicio_solicitado == servicio_solicitado.id_servicio_solicitado) \
-                 .join(servicio, servicio_solicitado.id_servicio == servicio.id_servicio) \
-                 .filter(cita.id_cita == cita_id).first()
+        # Importar los modelos necesarios
+        from app.models.cita import Cita
+        from app.models.servicio import Servicio
+        from app.models.servicio_solicitado import ServicioSolicitado  # Asegúrate de importar este modelo
 
-        if not cita:
+        # Realizar la consulta para obtener la cita con el nombre del servicio
+        cita_obj = db.query(Cita, Servicio.nombre_servicio) \
+            .join(ServicioSolicitado, Cita.id_servicio_solicitado == ServicioSolicitado.id_servicio_solicitado) \
+            .join(Servicio, ServicioSolicitado.id_servicio == Servicio.id_servicio) \
+            .filter(Cita.id_cita == cita_id).first()
+
+        if not cita_obj:
             raise HTTPException(status_code=404, detail="Cita no encontrada")
 
+        # Devolver la respuesta con los detalles de la cita y el nombre del servicio
         return {
-            "id_cita": cita.id_cita,
-            "fecha_hora_programada": cita.fecha_hora_programada,
-            "estado_cita": cita.estado_cita,
-            "nombre_servicio": cita.nombre_servicio
+            "id_cita": cita_obj.Cita.id_cita,
+            "fecha_hora_programada": cita_obj.Cita.fecha_hora_programada,
+            "estado_cita": cita_obj.Cita.estado_cita,
+            "nombre_servicio": cita_obj.nombre_servicio  # Nombre del servicio asociado
         }
+
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error al obtener cita: {str(e)}")
+
