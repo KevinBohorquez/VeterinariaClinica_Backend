@@ -8,6 +8,7 @@ from app.config.database import get_db
 from app.crud import veterinario  # ← Si existe este import
 from app.models.veterinario import Veterinario
 from app.models.especialidad import Especialidad
+from app.schemas import VeterinarioResponse, VeterinarioCreate, VeterinarioUpdate
 
 # from app.schemas.veterinario_schema import (...)  # ← Comentado temporalmente
 
@@ -258,3 +259,160 @@ async def get_veterinarios_by_especialidad(
             status_code=500,
             detail=f"Error al obtener veterinarios por especialidad: {str(e)}"
         )
+
+
+@router.post("/", status_code=status.HTTP_201_CREATED, response_model=VeterinarioResponse)
+async def create_veterinario(
+        veterinario_data: VeterinarioCreate,
+        db: Session = Depends(get_db)
+):
+    """
+    Crear un nuevo veterinario
+    """
+    try:
+        # Verificar que la especialidad existe
+        especialidad_obj = db.query(Especialidad).filter(
+            Especialidad.id_especialidad == veterinario_data.id_especialidad
+        ).first()
+
+        if not especialidad_obj:
+            raise HTTPException(
+                status_code=404,
+                detail="Especialidad no encontrada"
+            )
+
+        # Verificar duplicados DNI
+        if veterinario.exists_by_dni(db, dni=veterinario_data.dni):
+            raise HTTPException(
+                status_code=400,
+                detail="Ya existe un veterinario con este DNI"
+            )
+
+        # Verificar duplicados email
+        if veterinario.exists_by_email(db, email=veterinario_data.email):
+            raise HTTPException(
+                status_code=400,
+                detail="Ya existe un veterinario con este email"
+            )
+
+        # Verificar duplicados código CMVP
+        if veterinario.exists_by_codigo_cmvp(db, codigo_cmvp=veterinario_data.codigo_CMVP):
+            raise HTTPException(
+                status_code=400,
+                detail="Ya existe un veterinario con este código CMVP"
+            )
+
+        # Crear el veterinario
+        nuevo_veterinario = veterinario.create(db, obj_in=veterinario_data)
+
+        return nuevo_veterinario
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error al crear veterinario: {str(e)}"
+        )
+
+
+@router.put("/{veterinario_id}", response_model=VeterinarioResponse)
+async def update_veterinario(
+        veterinario_id: int,
+        veterinario_data: VeterinarioUpdate,
+        db: Session = Depends(get_db)
+):
+    """
+    Actualizar un veterinario existente
+    """
+    try:
+        # Verificar que el veterinario existe
+        veterinario_obj = veterinario.get(db, veterinario_id)
+        if not veterinario_obj:
+            raise HTTPException(
+                status_code=404,
+                detail="Veterinario no encontrado"
+            )
+
+        # Verificar especialidad si se está actualizando
+        if veterinario_data.id_especialidad:
+            especialidad_obj = db.query(Especialidad).filter(
+                Especialidad.id_especialidad == veterinario_data.id_especialidad
+            ).first()
+
+            if not especialidad_obj:
+                raise HTTPException(
+                    status_code=404,
+                    detail="Especialidad no encontrada"
+                )
+
+        # Verificar email único si se está actualizando
+        if veterinario_data.email:
+            if veterinario.exists_by_email(db, email=veterinario_data.email, exclude_id=veterinario_id):
+                raise HTTPException(
+                    status_code=400,
+                    detail="Ya existe otro veterinario con este email"
+                )
+
+        # Verificar código CMVP único si se está actualizando
+        if veterinario_data.codigo_CMVP:
+            if veterinario.exists_by_codigo_cmvp(db, codigo_cmvp=veterinario_data.codigo_CMVP,
+                                                 exclude_id=veterinario_id):
+                raise HTTPException(
+                    status_code=400,
+                    detail="Ya existe otro veterinario con este código CMVP"
+                )
+
+        # Actualizar el veterinario
+        veterinario_actualizado = veterinario.update(db, db_obj=veterinario_obj, obj_in=veterinario_data)
+
+        return veterinario_actualizado
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error al actualizar veterinario: {str(e)}"
+        )
+
+@router.delete("/{veterinario_id}")
+async def delete_veterinario(
+    veterinario_id: int,
+    db: Session = Depends(get_db)
+):
+    """
+    Eliminar un veterinario
+    """
+    try:
+        # Verificar que el veterinario existe
+        veterinario_obj = veterinario.get(db, veterinario_id)
+        if not veterinario_obj:
+            raise HTTPException(
+                status_code=404,
+                detail="Veterinario no encontrado"
+            )
+
+        # Verificar si el veterinario tiene citas pendientes o está ocupado
+        if veterinario_obj.disposicion == "Ocupado":
+            raise HTTPException(
+                status_code=400,
+                detail="No se puede eliminar un veterinario que está ocupado"
+            )
+
+        # Eliminar el veterinario
+        veterinario.remove(db, id=veterinario_id)
+
+        return {
+            "message": "Veterinario eliminado exitosamente",
+            "veterinario_id": veterinario_id
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error al eliminar veterinario: {str(e)}"
+        )
+

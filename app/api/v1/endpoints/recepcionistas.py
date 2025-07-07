@@ -198,3 +198,134 @@ async def debug_recepcionista_info(db: Session = Depends(get_db)):
         return {
             "error": f"Error al obtener información: {str(e)}"
         }
+
+
+# Agregar estos imports al archivo app/api/v1/endpoints/recepcionistas.py existente
+from app.schemas.recepcionista_schema import (
+    RecepcionistaCreate,
+    RecepcionistaUpdate,
+    RecepcionistaResponse
+)
+from app.crud.recepcionista_crud import recepcionista
+
+
+# Agregar estos endpoints al router existente
+
+@router.post("/", status_code=status.HTTP_201_CREATED, response_model=RecepcionistaResponse)
+async def create_recepcionista(
+        recepcionista_data: RecepcionistaCreate,
+        db: Session = Depends(get_db)
+):
+    """
+    Crear una nueva recepcionista
+    """
+    try:
+        # Verificar duplicados DNI
+        if recepcionista.exists_by_dni(db, dni=recepcionista_data.dni):
+            raise HTTPException(
+                status_code=400,
+                detail="Ya existe una recepcionista con este DNI"
+            )
+
+        # Verificar duplicados email
+        if recepcionista.exists_by_email(db, email=recepcionista_data.email):
+            raise HTTPException(
+                status_code=400,
+                detail="Ya existe una recepcionista con este email"
+            )
+
+        # Crear la recepcionista
+        nueva_recepcionista = recepcionista.create(db, obj_in=recepcionista_data)
+
+        return nueva_recepcionista
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error al crear recepcionista: {str(e)}"
+        )
+
+
+@router.put("/{recepcionista_id}", response_model=RecepcionistaResponse)
+async def update_recepcionista(
+        recepcionista_id: int,
+        recepcionista_data: RecepcionistaUpdate,
+        db: Session = Depends(get_db)
+):
+    """
+    Actualizar una recepcionista existente
+    """
+    try:
+        # Verificar que la recepcionista existe
+        recepcionista_obj = recepcionista.get(db, recepcionista_id)
+        if not recepcionista_obj:
+            raise HTTPException(
+                status_code=404,
+                detail="Recepcionista no encontrada"
+            )
+
+        # Verificar email único si se está actualizando
+        if recepcionista_data.email:
+            if recepcionista.exists_by_email(db, email=recepcionista_data.email, exclude_id=recepcionista_id):
+                raise HTTPException(
+                    status_code=400,
+                    detail="Ya existe otra recepcionista con este email"
+                )
+
+        # Actualizar la recepcionista
+        recepcionista_actualizada = recepcionista.update(db, db_obj=recepcionista_obj, obj_in=recepcionista_data)
+
+        return recepcionista_actualizada
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error al actualizar recepcionista: {str(e)}"
+        )
+
+
+@router.delete("/{recepcionista_id}")
+async def delete_recepcionista(
+        recepcionista_id: int,
+        db: Session = Depends(get_db)
+):
+    """
+    Eliminar una recepcionista
+    """
+    try:
+        # Verificar que la recepcionista existe
+        recepcionista_obj = recepcionista.get(db, recepcionista_id)
+        if not recepcionista_obj:
+            raise HTTPException(
+                status_code=404,
+                detail="Recepcionista no encontrada"
+            )
+
+        # Verificar si tiene tareas pendientes o está activa
+        if recepcionista_obj.estado == "Activo":
+            # Opcional: puedes hacer soft delete en lugar de hard delete
+            # recepcionista.soft_delete(db, id=recepcionista_id)
+            # return {"message": "Recepcionista desactivada exitosamente", "recepcionista_id": recepcionista_id}
+
+            # O permitir eliminar activas con warning
+            pass
+
+        # Eliminar la recepcionista (hard delete)
+        recepcionista.remove(db, id=recepcionista_id)
+
+        return {
+            "message": "Recepcionista eliminada exitosamente",
+            "recepcionista_id": recepcionista_id
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error al eliminar recepcionista: {str(e)}"
+        )
