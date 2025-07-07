@@ -242,6 +242,7 @@ async def update_mascota(
     return mascota.update(db, db_obj=mascota_obj, obj_in=mascota_data)
 
 
+@router.get("/mascotas")
 async def get_all_mascotas(db: Session = Depends(get_db)):
     try:
         # Query corregido
