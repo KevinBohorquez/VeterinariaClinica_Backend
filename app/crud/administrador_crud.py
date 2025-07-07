@@ -247,3 +247,4 @@ class CRUDAdministrador(CRUDBase[Administrador, AdministradorCreate, Administrad
 
 
 # Instancia única
+administrador = CRUDAdministrador(Administrador)

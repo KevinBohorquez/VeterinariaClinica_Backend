@@ -262,3 +262,4 @@ class CRUDUsuario(CRUDBase[Usuario, UsuarioCreate, UsuarioUpdate]):
 
 
 # Instancia única
+usuario = CRUDUsuario(Usuario)
