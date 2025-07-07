@@ -13,7 +13,7 @@ from app.schemas import (
     MascotaCreate, MascotaUpdate, MascotaResponse, MascotaSearch
 )
 from app.api.deps import get_mascota_or_404
-import datetime
+from datetime import datetime
 
 router = APIRouter()
 
