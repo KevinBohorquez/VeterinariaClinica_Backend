@@ -413,7 +413,7 @@ async def get_proxima_cita_mascota(
                 "mascota_id": mascota_id,
                 "proxima_cita": None,
                 "fecha_hora_programada": None,
-                "servicio": "--",
+                "servicio": "No hay citas programadas",
                 "mensaje": "No hay citas programadas"
             }
 

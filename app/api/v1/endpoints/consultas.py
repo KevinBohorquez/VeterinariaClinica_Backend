@@ -12,7 +12,7 @@ from app.crud.consulta_crud import (
     triaje, solicitud_atencion, cita
 )
 from app.crud.veterinario_crud import veterinario
-from app.models import Cita, ResultadoServicio, ServicioSolicitado, Servicio, Veterinario, Mascota
+from app.models import Cita, ResultadoServicio, ServicioSolicitado, Servicio, Veterinario, Mascota, HistorialClinico
 from app.models.consulta import Consulta
 from app.models.triaje import Triaje
 from app.models.solicitud_atencion import SolicitudAtencion
@@ -823,6 +823,45 @@ async def get_historial_clinico_mascota(
     try:
         eventos = historial_clinico.get_by_mascota(db, mascota_id=mascota_id, limit=limit)
 
+        return [
+            {
+                "id_historial": e.id_historial,
+                "fecha_evento": e.fecha_evento,
+                "tipo_evento": e.tipo_evento,
+                "edad_meses": e.edad_meses,
+                "descripcion_evento": e.descripcion_evento,
+                "peso_momento": float(e.peso_momento) if e.peso_momento else None,
+                "observaciones": e.observaciones
+            }
+            for e in eventos
+        ]
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error al obtener historial clínico: {str(e)}"
+        )
+
+
+@router.get("/historialConsultas/{mascota_id}", response_model=List[dict])
+async def get_historial_clinico_mascota(
+    mascota_id: int,
+    db: Session = Depends(get_db),
+    limit: int = Query(50, ge=1, le=500, description="Cantidad máxima de eventos")
+):
+    """
+    Obtener historial clínico de una mascota
+    """
+    try:
+        # Consultar los eventos en historial clínico relacionados con la mascota
+        eventos = db.query(HistorialClinico).join(Consulta).join(Triaje).join(SolicitudAtencion).filter(
+            HistorialClinico.id_mascota == mascota_id
+        ).limit(limit).all()
+
+        if not eventos:
+            raise HTTPException(status_code=404, detail="No se encontraron eventos para esta mascota")
+
+        # Mapear los eventos para devolverlos en el formato adecuado
         return [
             {
                 "id_historial": e.id_historial,
