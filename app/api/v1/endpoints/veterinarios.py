@@ -450,3 +450,37 @@ async def update_veterinario_disposicion(
             status_code=500,
             detail=f"Error al actualizar disposición: {str(e)}"
         )
+
+@router.put("/veterinario/usuario/{id_usuario}/disposicionLibre", response_model=VeterinarioResponse)
+async def update_veterinario_disposicion(
+        id_usuario: int,
+        db: Session = Depends(get_db)
+):
+    """
+    Actualizar la disposición de un veterinario a 'Ocupado'
+    """
+    try:
+        # Buscar al veterinario usando el id_usuario
+        veterinario_obj = db.query(Veterinario).filter(Veterinario.id_usuario == id_usuario).first()
+
+        if not veterinario_obj:
+            raise HTTPException(
+                status_code=404,
+                detail="Veterinario no encontrado"
+            )
+
+        # Crear objeto con los datos a actualizar
+        disposicion_data = {"disposicion": "Libre"}
+
+        # Actualizar el veterinario usando el patrón .update()
+        veterinario_actualizado = veterinario.update(db, db_obj=veterinario_obj, obj_in=disposicion_data)
+
+        return veterinario_actualizado
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error al actualizar disposición: {str(e)}"
+        )
