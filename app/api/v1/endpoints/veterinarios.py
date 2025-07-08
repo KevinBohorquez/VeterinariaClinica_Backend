@@ -6,6 +6,7 @@ from typing import List, Optional
 from app.config.database import get_db
 # ✅ TEMPORAL: Usar el patrón que funciona en clientes
 from app.crud import veterinario  # ← Si existe este import
+from app.models import ResultadoServicio
 from app.models.veterinario import Veterinario
 from app.models.especialidad import Especialidad
 from app.schemas import VeterinarioResponse, VeterinarioCreate, VeterinarioUpdate
@@ -484,3 +485,18 @@ async def update_veterinario_disposicion(
             status_code=500,
             detail=f"Error al actualizar disposición: {str(e)}"
         )
+
+@router.get("/por-usuarioCitas/{id_usuario}")
+def get_resultados_por_usuario(id_usuario: int, db: Session = Depends(get_db)):
+    # Buscar el veterinario correspondiente al id_usuario
+    veterinario = db.query(Veterinario).filter(Veterinario.id_usuario == id_usuario).first()
+    if not veterinario:
+        raise HTTPException(status_code=404, detail="No se encontró el veterinario asociado a este usuario")
+
+    # Traer todos los resultados donde sale como responsable
+    resultados = (
+        db.query(ResultadoServicio)
+        .filter(ResultadoServicio.id_veterinario == Veterinario.id_veterinario)
+        .all()
+    )
+    return resultados
