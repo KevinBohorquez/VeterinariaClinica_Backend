@@ -3,10 +3,10 @@ from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 from typing import Optional
-
+from typing import List
 from app.config.database import get_db
 from app.crud import mascota, cliente
-from app.models import SolicitudAtencion, Recepcionista, Cita, Servicio, ServicioSolicitado, TipoAnimal, Raza
+from app.models import SolicitudAtencion, Recepcionista, Cita, Servicio, ServicioSolicitado, TipoAnimal, Raza, Cliente
 from app.models.mascota import Mascota
 from app.models.cliente_mascota import ClienteMascota
 from app.schemas import (
@@ -486,3 +486,34 @@ async def get_ultima_atencion_mascota(
         )
 
 
+@router.get("/mascota_cliente_servicio/{id_mascota}", response_model=List[dict])
+async def get_mascota_cliente_servicio(id_mascota: int, db: Session = Depends(get_db)):
+    try:
+        # Realizamos la consulta con los JOIN correctos
+        result = db.query(Mascota, Cliente, Servicio, ServicioSolicitado) \
+            .join(ClienteMascota, Mascota.id_mascota == ClienteMascota.id_mascota) \
+            .join(Cliente, ClienteMascota.id_cliente == Cliente.id_cliente) \
+            .join(ServicioSolicitado, ServicioSolicitado.id_servicio_solicitado == Mascota.id_mascota) \
+            .join(Servicio, ServicioSolicitado.id_servicio == Servicio.id_servicio) \
+            .filter(Mascota.id_mascota == id_mascota) \
+            .all()
+
+        if not result:
+            raise HTTPException(status_code=404, detail="Mascota no encontrada o no tiene servicios asociados")
+
+        # Procesamos y devolvemos la respuesta mapeada en el formato deseado
+        return [
+            {
+                "id_mascota": m.id_mascota,
+                "nombre_mascota": m.nombre,
+                "id_cliente": c.id_cliente,
+                "nombre_cliente": f"{c.nombre} {c.apellido_paterno} {c.apellido_materno}",
+                "id_servicio_solicitado": ss.id_servicio_solicitado if ss else None,  # Manejo de NULL
+                "nombre_servicio": s.nombre_servicio if s else None,  # Nombre del servicio
+                "id_servicio": s.id_servicio if s else None,  # ID del servicio
+            }
+            for m, c, s, ss in result
+        ]
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error al obtener datos: {str(e)}")
