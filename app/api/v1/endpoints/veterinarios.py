@@ -496,8 +496,8 @@ def get_resultados_por_usuario(id_usuario: int, db: Session = Depends(get_db)):
     # 2️⃣ Traer todos los resultados con Cita relacionada
     resultados = (
         db.query(ResultadoServicio)
-        .options(joinedload(ResultadoServicio.cita))  # Cargar cita en la misma consulta
-        .filter(ResultadoServicio.id_veterinario == veterinario.id_veterinario)
+            .options(joinedload(ResultadoServicio.cita))  # Cargar cita en la misma consulta
+        .filter(ResultadoServicio.id_veterinario == Veterinario.id_veterinario)
         .all()
     )
 
