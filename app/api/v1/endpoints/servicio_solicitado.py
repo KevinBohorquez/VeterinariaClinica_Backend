@@ -1,13 +1,16 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from typing import List
+from datetime import datetime
+
+from starlette import status
 
 from app.config.database import get_db
 
-from app.models import Cita, ServicioSolicitado
+from app.models import Cita, ServicioSolicitado, Consulta, Servicio
 
 from app.schemas.consulta_schema import (
-    ServicioSolicitadoUpdate, ServicioSolicitadoResponse
+    ServicioSolicitadoUpdate, ServicioSolicitadoResponse, ServicioCitaCreate
 )
 
 router = APIRouter()
@@ -88,3 +91,90 @@ async def update_servicio_solicitado(id_servicio_solicitado: int, servicio_solic
         return servicio
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error al actualizar servicio solicitado: {str(e)}")
+
+
+@router.post("/consultas/{consulta_id}/servicio-cita", status_code=status.HTTP_201_CREATED)
+async def create_servicio_cita(
+        consulta_id: int,
+        request_data: ServicioCitaCreate,
+        db: Session = Depends(get_db)
+):
+    """
+    Crear un servicio solicitado y su cita correspondiente para una consulta
+    """
+    try:
+        # Verificar que la consulta existe
+        consulta_obj = Consulta.get(db, consulta_id)
+        if not consulta_obj:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Consulta no encontrada"
+            )
+
+        # Verificar que el servicio existe y está activo
+        servicio_obj = Servicio.get(db, request_data.id_servicio)
+        if not servicio_obj or not servicio_obj.activo:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Servicio no encontrado o inactivo"
+            )
+
+        # Obtener id_mascota a través de joins: Consulta -> Triaje -> Solicitud_atencion -> Mascota
+        result = db.execute(
+            """
+            SELECT sa.id_mascota 
+            FROM Consulta c
+            JOIN Triaje t ON c.id_triaje = t.id_triaje
+            JOIN Solicitud_atencion sa ON t.id_solicitud = sa.id_solicitud
+            WHERE c.id_consulta = :consulta_id
+            """,
+            {"consulta_id": consulta_id}
+        ).fetchone()
+
+        if not result:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="No se pudo obtener la mascota asociada a la consulta"
+            )
+
+        id_mascota = result[0]
+
+        # Crear el diccionario para Servicio_Solicitado
+        servicio_solicitado_dict = {
+            'id_consulta': consulta_id,
+            'id_servicio': request_data.id_servicio,
+            'fecha_solicitado': datetime.now(),
+            'prioridad': request_data.prioridad,
+            'estado_examen': 'Solicitado',  # Fijo como solicitaste
+            'comentario_opcional': request_data.comentario_opcional
+        }
+
+        # Crear el servicio solicitado usando el método CRUD
+        nuevo_servicio_solicitado = ServicioSolicitado.create(db, obj_in=servicio_solicitado_dict)
+
+        # Crear el diccionario para Cita usando el ID del servicio_solicitado recién creado
+        cita_dict = {
+            'id_mascota': id_mascota,
+            'id_servicio_solicitado': nuevo_servicio_solicitado.id_servicio_solicitado,
+            'fecha_hora_programada': request_data.fecha_hora_programada,
+            'estado_cita': 'Programada',  # Fijo como solicitaste
+            'requiere_ayuno': request_data.requiere_ayuno,
+            'observaciones': request_data.observaciones
+        }
+
+        # Crear la cita usando el método CRUD
+        nueva_cita = Cita.create(db, obj_in=cita_dict)
+
+        return {
+            "detail": "Servicio solicitado y cita creados exitosamente",
+            "servicio_solicitado_id": nuevo_servicio_solicitado.id_servicio_solicitado,
+            "cita_id": nueva_cita.id_cita
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error al crear servicio solicitado y cita: {str(e)}"
+        )

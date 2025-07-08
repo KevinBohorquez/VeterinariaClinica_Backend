@@ -1254,3 +1254,4 @@ async def create_diagnostico(
             status_code=500,
             detail=f"Error al crear diagnóstico: {str(e)}"
         )
+

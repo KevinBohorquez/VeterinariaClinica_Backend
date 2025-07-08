@@ -390,6 +390,17 @@ class ServicioSolicitadoUpdate(BaseModel):
             raise ValueError('Prioridad debe ser Urgente, Normal o Programable')
         return v
 
+
+class ServicioCitaCreate(BaseModel):
+    # Datos para Servicio_Solicitado
+    prioridad: str
+    comentario_opcional: Optional[str] = None
+
+    # Datos para Cita
+    fecha_hora_programada: datetime
+    requiere_ayuno: bool
+    observaciones: Optional[str] = None
+
 # ===== RESULTADO SERVICIO =====
 
 class ResultadoServicioCreate(BaseModel):
