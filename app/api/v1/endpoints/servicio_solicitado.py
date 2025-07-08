@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from typing import List
 from datetime import datetime
-
+from sqlalchemy import text
 from starlette import status
 
 from app.config.database import get_db
@@ -124,13 +124,13 @@ async def create_servicio_cita(
 
         # Obtener id_mascota a través de joins: Consulta -> Triaje -> Solicitud_atencion -> Mascota
         result = db.execute(
-            """
+            text("""
             SELECT sa.id_mascota 
             FROM Consulta c
             JOIN Triaje t ON c.id_triaje = t.id_triaje
             JOIN Solicitud_atencion sa ON t.id_solicitud = sa.id_solicitud
             WHERE c.id_consulta = :consulta_id
-            """,
+            """),
             {"consulta_id": consulta_id}
         ).fetchone()
 
