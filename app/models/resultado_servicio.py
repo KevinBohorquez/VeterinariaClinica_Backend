@@ -1,5 +1,7 @@
 # app/models/resultado_servicio.py
 from sqlalchemy import Column, Integer, DateTime, Text, String, ForeignKey, CheckConstraint
+from sqlalchemy.orm import relationship
+
 from app.models.base import Base
 
 
