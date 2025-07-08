@@ -7,7 +7,7 @@ from starlette import status
 
 from app.config.database import get_db
 
-from app.models import Cita, ServicioSolicitado, Servicio, Consulta
+from app.models import Cita, ServicioSolicitado, Servicio, Consulta, Veterinario, ResultadoServicio
 
 from app.schemas.consulta_schema import (
     ServicioSolicitadoUpdate, ServicioSolicitadoResponse, ServicioCitaCreate
@@ -122,6 +122,16 @@ async def create_servicio_cita(
                 detail="Servicio no encontrado o inactivo"
             )
 
+        # Verificar que el veterinario existe
+        veterinario_obj = db.query(Veterinario).filter(
+            Veterinario.id_veterinario == request_data.id_veterinario
+        ).first()
+        if not veterinario_obj:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Veterinario no encontrado"
+            )
+
         # Obtener id_mascota a través de joins: Consulta -> Triaje -> Solicitud_atencion -> Mascota
         result = db.execute(
             text("""
@@ -170,12 +180,25 @@ async def create_servicio_cita(
         # Crear la cita directamente con la sesión
         nueva_cita = Cita(**cita_dict)
         db.add(nueva_cita)
-        db.commit()  # Confirmar ambas operaciones
+        db.flush()  # Para obtener el ID de la cita sin hacer commit
+
+        # Crear el diccionario para Resultado_servicio
+        resultado_servicio_dict = {
+            'id_cita': nueva_cita.id_cita,
+            'id_veterinario': request_data.id_veterinario,
+            'fecha_realizacion': datetime.now()
+        }
+
+        # Crear el resultado de servicio directamente con la sesión
+        nuevo_resultado = ResultadoServicio(**resultado_servicio_dict)
+        db.add(nuevo_resultado)
+        db.commit()  # Confirmar todas las operaciones
 
         return {
-            "detail": "Servicio solicitado y cita creados exitosamente",
+            "detail": "Servicio solicitado, cita y resultado creados exitosamente",
             "servicio_solicitado_id": nuevo_servicio_solicitado.id_servicio_solicitado,
-            "cita_id": nueva_cita.id_cita
+            "cita_id": nueva_cita.id_cita,
+            "resultado_id": nuevo_resultado.id_resultado
         }
 
     except HTTPException:

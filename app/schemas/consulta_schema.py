@@ -393,6 +393,7 @@ class ServicioSolicitadoUpdate(BaseModel):
 
 class ServicioCitaCreate(BaseModel):
     # Datos para Servicio_Solicitado
+    id_veterinario: int
     id_servicio: int
     prioridad: str
     comentario_opcional: Optional[str] = None
