@@ -1214,3 +1214,40 @@ async def update_diagnostico_completo(
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=500, detail=f"Error al actualizar: {str(e)}")
+
+
+@router.post("/diagnostico/{consulta_id}", status_code=status.HTTP_201_CREATED)
+async def create_diagnostico(
+        consulta_id: int,
+        db: Session = Depends(get_db)
+):
+    """
+    Crear un diagnóstico con valores predeterminados para una consulta
+    """
+    try:
+        # Verificar que la consulta existe
+        consulta_obj = db.query(Consulta).filter(Consulta.id_consulta == consulta_id).first()
+        if not consulta_obj:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Consulta no encontrada"
+            )
+
+        # Insertar el diagnóstico con valores predeterminados
+        db.execute("""
+            INSERT INTO Diagnostico (id_consulta, tipo_diagnostico, fecha_diagnostico, estado_patologia, diagnostico)
+            VALUES (:id_consulta, 'Presuntivo', NOW(), 'Activa', 'Diagnóstico inicial')
+        """, {'id_consulta': consulta_id})
+
+        # Commit para aplicar el cambio
+        db.commit()
+
+        return {"detail": "Diagnóstico insertado correctamente"}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error al crear diagnóstico: {str(e)}"
+        )
