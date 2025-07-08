@@ -417,23 +417,36 @@ async def delete_veterinario(
         )
 
 
-@router.put("/veterinario/usuario/{id_usuario}/disposicion", response_model=Veterinario)
-async def update_veterinario_disposicion(id_usuario: int, db: Session = Depends(get_db)):
+@router.put("/veterinario/usuario/{id_usuario}/disposicion", response_model=VeterinarioResponse)
+async def update_veterinario_disposicion(
+        id_usuario: int,
+        db: Session = Depends(get_db)
+):
+    """
+    Actualizar la disposición de un veterinario a 'Ocupado'
+    """
     try:
-        # Buscamos el veterinario usando el id_usuario
-        veterinario = db.query(Veterinario).filter(Veterinario.id_usuario == id_usuario).first()
+        # Buscar al veterinario usando el id_usuario
+        veterinario_obj = db.query(Veterinario).filter(Veterinario.id_usuario == id_usuario).first()
 
-        if not veterinario:
-            raise HTTPException(status_code=404, detail="Veterinario no encontrado")
+        if not veterinario_obj:
+            raise HTTPException(
+                status_code=404,
+                detail="Veterinario no encontrado"
+            )
 
-        # Actualizamos la disposición del veterinario a 'Ocupado'
-        veterinario.disposicion = 'Ocupado'
+        # Crear objeto con los datos a actualizar
+        disposicion_data = {"disposicion": "Ocupado"}
 
-        # Guardamos los cambios en la base de datos
-        db.commit()
-        db.refresh(veterinario)
+        # Actualizar el veterinario usando el patrón .update()
+        veterinario_actualizado = veterinario.update(db, db_obj=veterinario_obj, obj_in=disposicion_data)
 
-        return veterinario
+        return veterinario_actualizado
 
+    except HTTPException:
+        raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error al actualizar disposición: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error al actualizar disposición: {str(e)}"
+        )
