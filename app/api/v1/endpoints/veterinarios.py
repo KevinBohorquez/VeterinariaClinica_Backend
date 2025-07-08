@@ -1,6 +1,6 @@
 # app/api/v1/endpoints/veterinarios.py
 from fastapi import APIRouter, Depends, HTTPException, status, Query
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from typing import List, Optional
 
 from app.config.database import get_db
@@ -488,15 +488,41 @@ async def update_veterinario_disposicion(
 
 @router.get("/por-usuarioCitas/{id_usuario}")
 def get_resultados_por_usuario(id_usuario: int, db: Session = Depends(get_db)):
-    # Buscar el veterinario correspondiente al id_usuario
+    # 1️⃣ Buscar el veterinario
     veterinario = db.query(Veterinario).filter(Veterinario.id_usuario == id_usuario).first()
     if not veterinario:
         raise HTTPException(status_code=404, detail="No se encontró el veterinario asociado a este usuario")
 
-    # Traer todos los resultados donde sale como responsable
+    # 2️⃣ Traer todos los resultados con Cita relacionada
     resultados = (
         db.query(ResultadoServicio)
-        .filter(ResultadoServicio.id_veterinario == Veterinario.id_veterinario)
+        .options(joinedload(ResultadoServicio.cita))  # Cargar cita en la misma consulta
+        .filter(ResultadoServicio.id_veterinario == veterinario.id_veterinario)
         .all()
     )
-    return resultados
+
+    # 3️⃣ Convertir resultados en lista de dicts que incluyan los datos de la Cita
+    lista_resultados = []
+    for r in resultados:
+        cita_info = None
+        if r.cita:
+            cita_info = {
+                "id_cita": r.cita.id_cita,
+                "fecha_hora_programada": r.cita.fecha_hora_programada,
+                "estado_cita": r.cita.estado_cita,
+                "requiere_ayuno": r.cita.requiere_ayuno,
+                "observaciones": r.cita.observaciones
+            }
+        resultado_dict = {
+            "id_resultado": r.id_resultado,
+            "id_cita": r.id_cita,
+            "resultado": r.resultado,
+            "interpretacion": r.interpretacion,
+            "archivo_adjunto": r.archivo_adjunto,
+            "fecha_realizacion": r.fecha_realizacion,
+            "id_veterinario": r.id_veterinario,
+            "cita": cita_info
+        }
+        lista_resultados.append(resultado_dict)
+
+    return lista_resultados
