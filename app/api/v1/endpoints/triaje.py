@@ -7,6 +7,7 @@ from app.config.database import get_db
 from app.crud.consulta_crud import (
     triaje
 )
+from app.models import Triaje
 
 from app.schemas.consulta_schema import (
     TriajeResponse, TriajeCreate, TriajeUpdate
@@ -210,4 +211,30 @@ async def update_triaje(
         raise HTTPException(
             status_code=500,
             detail=f"Error al actualizar triaje: {str(e)}"
+        )
+
+
+@router.get("/consulta/{id_solicitud}", response_model=TriajeResponse)
+async def get_triaje_por_consulta_id(
+    id_solicitud: int,
+    db: Session = Depends(get_db)
+):
+    """
+    Obtener un triaje específico por ID de consulta
+    """
+    try:
+        consulta_obj = db.query(Triaje).filter(Triaje.id_solicitud == id_solicitud).first()
+        if not consulta_obj:
+            raise HTTPException(
+                status_code=404,
+                detail="Triaje no encontrado"
+            )
+        return consulta_obj
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error al obtener triaje: {str(e)}"
         )
