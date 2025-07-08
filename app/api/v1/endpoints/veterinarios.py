@@ -6,7 +6,7 @@ from typing import List, Optional
 from app.config.database import get_db
 # ✅ TEMPORAL: Usar el patrón que funciona en clientes
 from app.crud import veterinario  # ← Si existe este import
-from app.models import ResultadoServicio
+from app.models import ResultadoServicio, Cita, ServicioSolicitado
 from app.models.veterinario import Veterinario
 from app.models.especialidad import Especialidad
 from app.schemas import VeterinarioResponse, VeterinarioCreate, VeterinarioUpdate
@@ -486,43 +486,64 @@ async def update_veterinario_disposicion(
             detail=f"Error al actualizar disposición: {str(e)}"
         )
 
-@router.get("/por-usuarioCitas/{id_usuario}")
-def get_resultados_por_usuario(id_usuario: int, db: Session = Depends(get_db)):
-    # 1️⃣ Buscar el veterinario
+@router.get("resultados-completos/{id_usuario}")
+def get_resultados_completos_por_usuario(id_usuario: int, db: Session = Depends(get_db)):
+    # Validar veterinario
     veterinario = db.query(Veterinario).filter(Veterinario.id_usuario == id_usuario).first()
     if not veterinario:
         raise HTTPException(status_code=404, detail="No se encontró el veterinario asociado a este usuario")
 
-    # 2️⃣ Traer todos los resultados con Cita relacionada
+    # Traer todos los resultados con joins
     resultados = (
         db.query(ResultadoServicio)
-            .options(joinedload(ResultadoServicio.cita))  # Cargar cita en la misma consulta
-        .filter(ResultadoServicio.id_veterinario == Veterinario.id_veterinario)
+        .join(ResultadoServicio.cita)
+        .join(Cita.mascota)
+        .join(Cita.servicio_solicitado)
+        .join(ServicioSolicitado.servicio)
+        .options(
+            joinedload(ResultadoServicio.cita)
+            .joinedload(Cita.mascota),
+            joinedload(ResultadoServicio.cita)
+            .joinedload(Cita.servicio_solicitado)
+            .joinedload(ServicioSolicitado.servicio)
+        )
+        .filter(ResultadoServicio.id_veterinario == veterinario.id_veterinario)
         .all()
     )
 
-    # 3️⃣ Convertir resultados en lista de dicts que incluyan los datos de la Cita
-    lista_resultados = []
+    # Serializar
+    resultado_list = []
     for r in resultados:
-        cita_info = None
-        if r.cita:
-            cita_info = {
-                "id_cita": r.cita.id_cita,
-                "fecha_hora_programada": r.cita.fecha_hora_programada,
-                "estado_cita": r.cita.estado_cita,
-                "requiere_ayuno": r.cita.requiere_ayuno,
-                "observaciones": r.cita.observaciones
-            }
+        cita = r.cita
+        mascota = cita.mascota if cita else None
+        servicio_solicitado = cita.servicio_solicitado if cita else None
+        servicio = servicio_solicitado.servicio if servicio_solicitado else None
+
         resultado_dict = {
             "id_resultado": r.id_resultado,
             "id_cita": r.id_cita,
             "resultado": r.resultado,
             "interpretacion": r.interpretacion,
             "archivo_adjunto": r.archivo_adjunto,
-            "fecha_realizacion": r.fecha_realizacion,
-            "id_veterinario": r.id_veterinario,
-            "cita": cita_info
+            "fecha_realizacion": r.fecha_realizacion.isoformat() if r.fecha_realizacion else None,
+            "cita": {
+                "id_cita": cita.id_cita if cita else None,
+                "fecha_hora_programada": cita.fecha_hora_programada.isoformat() if cita and cita.fecha_hora_programada else None,
+                "estado_cita": cita.estado_cita if cita else None,
+                "mascota": {
+                    "id_mascota": mascota.id_mascota if mascota else None,
+                    "nombre": mascota.nombre if mascota else None,
+                    "sexo": mascota.sexo if mascota else None,
+                    "color": mascota.color if mascota else None,
+                } if mascota else None,
+                "servicio": {
+                    "id_servicio": servicio.id_servicio if servicio else None,
+                    "nombre_servicio": servicio.nombre_servicio if servicio else None,
+                    "precio": float(servicio.precio) if servicio else None
+                } if servicio else None
+            } if cita else None
         }
-        lista_resultados.append(resultado_dict)
 
-    return lista_resultados
+        resultado_list.append(resultado_dict)
+
+    return resultado_list
