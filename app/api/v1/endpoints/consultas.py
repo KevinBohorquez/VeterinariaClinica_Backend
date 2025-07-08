@@ -1226,23 +1226,26 @@ async def create_diagnostico(
     """
     try:
         # Verificar que la consulta existe
-        consulta_obj = db.query(Consulta).filter(Consulta.id_consulta == consulta_id).first()
+        consulta_obj = consulta.get(db, consulta_id)
         if not consulta_obj:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Consulta no encontrada"
             )
 
-        # Insertar el diagnóstico con valores predeterminados
-        db.execute("""
-            INSERT INTO Diagnostico (id_consulta, tipo_diagnostico, fecha_diagnostico, estado_patologia, diagnostico)
-            VALUES (:id_consulta, 'Presuntivo', NOW(), 'Activa', 'Diagnóstico inicial')
-        """, {'id_consulta': consulta_id})
+        # Crear el diccionario con valores predeterminados
+        diagnostico_dict = {
+            'id_consulta': consulta_id,
+            'tipo_diagnostico': 'Presuntivo',
+            'fecha_diagnostico': datetime.now(),
+            'estado_patologia': 'Activa',
+            'diagnostico': 'Diagnóstico inicial'
+        }
 
-        # Commit para aplicar el cambio
-        db.commit()
+        # Crear el diagnóstico usando el método CRUD
+        nuevo_diagnostico = diagnostico.create(db, obj_in=diagnostico_dict)
 
-        return {"detail": "Diagnóstico insertado correctamente"}
+        return {"detail": "Diagnóstico insertado correctamente", "id": nuevo_diagnostico.id_diagnostico}
 
     except HTTPException:
         raise
