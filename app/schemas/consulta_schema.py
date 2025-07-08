@@ -541,13 +541,13 @@ class DiagnosticoCompletoUpdate(BaseModel):
 
     @validator('tipo_diagnostico')
     def validate_tipo_diagnostico(cls, v):
-        if v is not None and v not in ['Presuntivo', 'Confirmado']:
+        if v is not None and v not in ['Presuntivo', 'Confirmado', 'Descartado']:
             raise ValueError('Tipo diagnóstico debe ser Presuntivo o Confirmado')
         return v
 
     @validator('estado_patologia')
     def validate_estado_patologia(cls, v):
-        if v is not None and v not in ['Activa', 'Inactiva']:
+        if v is not None and v not in ['Activa', 'Controlada', 'Curada', 'En seguimiento']:
             raise ValueError('Estado patología debe ser Activa o Inactiva')
         return v
 
@@ -565,18 +565,18 @@ class DiagnosticoCompletoUpdate(BaseModel):
 
     @validator('gravedad_patologia')
     def validate_gravedad_patologia(cls, v):
-        if v is not None and v not in ['Leve', 'Moderada', 'Severa']:
+        if v is not None and v not in ['Leve', 'Moderada', 'Grave', 'Critica']:
             raise ValueError('Gravedad patología debe ser Leve, Moderada o Severa')
         return v
 
     @validator('tipo_tratamiento')
     def validate_tipo_tratamiento(cls, v):
-        if v is not None and v not in ['Medicamento', 'Cirugía', 'Terapia']:
+        if v is not None and v not in ['Medicamentoso', 'Quirurgico', 'Terapeutico', 'Preventivo']:
             raise ValueError('Tipo tratamiento debe ser Medicamento, Cirugía o Terapia')
         return v
 
     @validator('eficacia_tratamiento')
     def validate_eficacia_tratamiento(cls, v):
-        if v is not None and v not in ['Muy buena', 'Bueno', 'Regular', 'Malo']:
+        if v is not None and v not in ['Muy buena', 'Buena', 'Regular', 'Mala']:
             raise ValueError('Eficacia tratamiento debe ser Muy buena, Bueno, Regular o Malo')
         return v
