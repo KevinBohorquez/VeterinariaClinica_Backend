@@ -7,7 +7,7 @@ from starlette import status
 
 from app.config.database import get_db
 
-from app.models import Cita, ServicioSolicitado, Consulta, Servicio
+from app.models import Cita, ServicioSolicitado, Servicio, Consulta
 
 from app.schemas.consulta_schema import (
     ServicioSolicitadoUpdate, ServicioSolicitadoResponse, ServicioCitaCreate
@@ -104,7 +104,7 @@ async def create_servicio_cita(
     """
     try:
         # Verificar que la consulta existe
-        consulta_obj = Consulta.get(db, consulta_id)
+        consulta_obj = db.query(Consulta).filter(Consulta.id_consulta == consulta_id).first()
         if not consulta_obj:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
@@ -112,8 +112,11 @@ async def create_servicio_cita(
             )
 
         # Verificar que el servicio existe y está activo
-        servicio_obj = Servicio.get(db, request_data.id_servicio)
-        if not servicio_obj or not servicio_obj.activo:
+        servicio_obj = db.query(Servicio).filter(
+            Servicio.id_servicio == request_data.id_servicio,
+            Servicio.activo == True
+        ).first()
+        if not servicio_obj:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Servicio no encontrado o inactivo"
@@ -149,8 +152,10 @@ async def create_servicio_cita(
             'comentario_opcional': request_data.comentario_opcional
         }
 
-        # Crear el servicio solicitado usando el método CRUD
-        nuevo_servicio_solicitado = ServicioSolicitado.create(db, obj_in=servicio_solicitado_dict)
+        # Crear el servicio solicitado directamente con la sesión
+        nuevo_servicio_solicitado = ServicioSolicitado(**servicio_solicitado_dict)
+        db.add(nuevo_servicio_solicitado)
+        db.flush()  # Para obtener el ID sin hacer commit
 
         # Crear el diccionario para Cita usando el ID del servicio_solicitado recién creado
         cita_dict = {
@@ -162,8 +167,10 @@ async def create_servicio_cita(
             'observaciones': request_data.observaciones
         }
 
-        # Crear la cita usando el método CRUD
-        nueva_cita = Cita.create(db, obj_in=cita_dict)
+        # Crear la cita directamente con la sesión
+        nueva_cita = Cita(**cita_dict)
+        db.add(nueva_cita)
+        db.commit()  # Confirmar ambas operaciones
 
         return {
             "detail": "Servicio solicitado y cita creados exitosamente",
