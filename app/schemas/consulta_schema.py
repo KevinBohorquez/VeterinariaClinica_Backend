@@ -240,6 +240,14 @@ class DiagnosticoCreate(BaseModel):
             raise ValueError('Diagnóstico debe tener al menos 5 caracteres')
         return v.strip()
 
+class DiagnosticoUpdate(BaseModel):
+    """Schema para actualizar diagnóstico"""
+    id_consulta: Optional[int] = None
+    id_patologia: Optional[int] = None
+    diagnostico: Optional[str] = None
+    tipo_diagnostico: Optional[str] = None
+    estado_patologia: Optional[str] = None
+    fecha_diagnostico: Optional[datetime] = None
 
 class DiagnosticoResponse(BaseResponse):
     """Schema para respuesta de diagnóstico"""
@@ -250,6 +258,7 @@ class DiagnosticoResponse(BaseResponse):
     fecha_diagnostico: datetime
     estado_patologia: str
     diagnostico: str
+
 
 
 # ===== TRATAMIENTO =====
@@ -279,6 +288,22 @@ class TratamientoResponse(BaseResponse):
     eficacia_tratamiento: Optional[str]
     tipo_tratamiento: str
 
+
+class TratamientoUpdate(BaseModel):
+    """Schema para actualizar tratamiento"""
+    id_consulta: Optional[int] = None
+    id_patologia: Optional[int] = None
+    tipo_tratamiento: Optional[str] = None
+    fecha_inicio: Optional[date] = None
+    eficacia_tratamiento: Optional[str] = None
+
+    @validator('tipo_tratamiento')
+    def validate_tipo_tratamiento(cls, v):
+        if v is not None:
+            tipos = ['Medicamentoso', 'Quirurgico', 'Terapeutico', 'Preventivo']
+            if v not in tipos:
+                raise ValueError(f'Tipo debe ser uno de: {", ".join(tipos)}')
+        return v
 
 # ===== CITA =====
 
@@ -487,3 +512,71 @@ class HistorialSearch(BaseModel):
     fecha_hasta: Optional[date] = None
     page: int = 1
     per_page: int = 20
+
+
+class DiagnosticoCompletoUpdate(BaseModel):
+    """Schema para actualizar todos los campos del formulario"""
+    # Campos de DIAGNOSTICO
+    tipo_diagnostico: Optional[str] = None
+    diagnostico: Optional[str] = None
+    estado_patologia: Optional[str] = None
+
+    # Campos de PATOLOGIA
+    nombre_patologia: Optional[str] = None
+    especie_afecta: Optional[str] = None
+    es_contagioso: Optional[bool] = None
+    es_cronico: Optional[bool] = None
+    gravedad_patologia: Optional[str] = None
+
+    # Campos de TRATAMIENTO
+    fecha_inicio: Optional[date] = None
+    tipo_tratamiento: Optional[str] = None
+    eficacia_tratamiento: Optional[str] = None
+
+    @validator('diagnostico')
+    def validate_diagnostico(cls, v):
+        if v is not None and len(v.strip()) < 5:
+            raise ValueError('Diagnóstico debe tener al menos 5 caracteres')
+        return v.strip() if v else v
+
+    @validator('tipo_diagnostico')
+    def validate_tipo_diagnostico(cls, v):
+        if v is not None and v not in ['Presuntivo', 'Confirmado']:
+            raise ValueError('Tipo diagnóstico debe ser Presuntivo o Confirmado')
+        return v
+
+    @validator('estado_patologia')
+    def validate_estado_patologia(cls, v):
+        if v is not None and v not in ['Activa', 'Inactiva']:
+            raise ValueError('Estado patología debe ser Activa o Inactiva')
+        return v
+
+    @validator('nombre_patologia')
+    def validate_nombre_patologia(cls, v):
+        if v is not None and len(v.strip()) < 3:
+            raise ValueError('Nombre de patología debe tener al menos 3 caracteres')
+        return v.strip().title() if v else v
+
+    @validator('especie_afecta')
+    def validate_especie_afecta(cls, v):
+        if v is not None and v not in ['Perro', 'Gato', 'Ambas']:
+            raise ValueError('Especie afecta debe ser Perro, Gato o Ambas')
+        return v
+
+    @validator('gravedad_patologia')
+    def validate_gravedad_patologia(cls, v):
+        if v is not None and v not in ['Leve', 'Moderada', 'Severa']:
+            raise ValueError('Gravedad patología debe ser Leve, Moderada o Severa')
+        return v
+
+    @validator('tipo_tratamiento')
+    def validate_tipo_tratamiento(cls, v):
+        if v is not None and v not in ['Medicamento', 'Cirugía', 'Terapia']:
+            raise ValueError('Tipo tratamiento debe ser Medicamento, Cirugía o Terapia')
+        return v
+
+    @validator('eficacia_tratamiento')
+    def validate_eficacia_tratamiento(cls, v):
+        if v is not None and v not in ['Muy buena', 'Bueno', 'Regular', 'Malo']:
+            raise ValueError('Eficacia tratamiento debe ser Muy buena, Bueno, Regular o Malo')
+        return v

@@ -22,7 +22,7 @@ from app.schemas.consulta_schema import (
     DiagnosticoCreate, DiagnosticoResponse,
     TratamientoCreate, TratamientoResponse,
     CitaResponse,
-    CitaCreate,ConsultaUpdate, ResultadoServicioResponse, ResultadoServicioCreate,
+    CitaCreate, ConsultaUpdate, ResultadoServicioResponse, ResultadoServicioCreate, DiagnosticoCompletoUpdate,
 )
 from app.schemas.base_schema import MessageResponse
 
@@ -1087,3 +1087,130 @@ async def get_tratamiento_patologia_by_diagnostico(
             status_code=500,
             detail=f"Error al obtener tratamiento, patología y diagnóstico: {str(e)}"
         )
+
+
+@router.put("/diagnostico/{id_diagnostico}/completo", response_model=List[dict])
+async def update_diagnostico_completo(
+        id_diagnostico: int,
+        data: DiagnosticoCompletoUpdate,
+        db: Session = Depends(get_db)
+):
+    """
+    Actualizar todos los campos del formulario: diagnóstico, patología y tratamiento
+    """
+    try:
+        # 1. Obtener el diagnóstico principal
+        diagnostico_obj = db.query(Diagnostico).filter(
+            Diagnostico.id_diagnostico == id_diagnostico
+        ).first()
+
+        if not diagnostico_obj:
+            raise HTTPException(status_code=404, detail="Diagnóstico no encontrado")
+
+        # 2. Actualizar campos de DIAGNOSTICO
+        if data.tipo_diagnostico is not None:
+            diagnostico_obj.tipo_diagnostico = data.tipo_diagnostico
+        if data.diagnostico is not None:
+            diagnostico_obj.diagnostico = data.diagnostico
+        if data.estado_patologia is not None:
+            diagnostico_obj.estado_patologia = data.estado_patologia
+
+        # 3. Obtener y actualizar PATOLOGIA
+        patologia_obj = db.query(Patologia).filter(
+            Patologia.id_patologia == diagnostico_obj.id_patologia
+        ).first()
+
+        if patologia_obj:
+            if data.nombre_patologia is not None:
+                patologia_obj.nombre_patologia = data.nombre_patologia
+            if data.especie_afecta is not None:
+                patologia_obj.especie_afecta = data.especie_afecta
+            if data.es_contagioso is not None:
+                patologia_obj.es_contagiosa = data.es_contagioso
+            if data.es_cronico is not None:
+                patologia_obj.es_crónica = data.es_cronico
+            if data.gravedad_patologia is not None:
+                patologia_obj.gravedad = data.gravedad_patologia
+
+        # 4. Obtener y actualizar TRATAMIENTO
+        tratamiento_obj = db.query(Tratamiento).filter(
+            Tratamiento.id_consulta == diagnostico_obj.id_consulta,
+            Tratamiento.id_patologia == diagnostico_obj.id_patologia
+        ).first()
+
+        if tratamiento_obj:
+            if data.fecha_inicio is not None:
+                tratamiento_obj.fecha_inicio = data.fecha_inicio
+            if data.tipo_tratamiento is not None:
+                tratamiento_obj.tipo_tratamiento = data.tipo_tratamiento
+            if data.eficacia_tratamiento is not None:
+                tratamiento_obj.eficacia_tratamiento = data.eficacia_tratamiento
+
+        # 5. Guardar cambios
+        db.commit()
+        db.refresh(diagnostico_obj)
+        if patologia_obj:
+            db.refresh(patologia_obj)
+        if tratamiento_obj:
+            db.refresh(tratamiento_obj)
+
+        # 6. Devolver datos actualizados (misma estructura que el GET)
+        tratamiento_patologia_diagnostico = db.query(Tratamiento, Patologia, Diagnostico) \
+            .join(Patologia, Patologia.id_patologia == Tratamiento.id_patologia) \
+            .join(Diagnostico, Diagnostico.id_patologia == Patologia.id_patologia) \
+            .filter(Diagnostico.id_diagnostico == id_diagnostico) \
+            .all()
+
+        if tratamiento_patologia_diagnostico:
+            return [
+                {
+                    "id_tratamiento": t.id_tratamiento,
+                    "id_consulta": t.id_consulta,
+                    "id_patologia": p.id_patologia,
+                    "nombre_patologia": p.nombre_patologia,
+                    "especie_afecta": p.especie_afecta,
+                    "gravedad": p.gravedad,
+                    "es_crónica": p.es_crónica,
+                    "es_contagiosa": p.es_contagiosa,
+                    "fecha_inicio_tratamiento": t.fecha_inicio,
+                    "eficacia_tratamiento": t.eficacia_tratamiento,
+                    "tipo_tratamiento": t.tipo_tratamiento,
+                    "tipo_diagnostico": d.tipo_diagnostico,
+                    "fecha_diagnostico": d.fecha_diagnostico,
+                    "estado_patologia": d.estado_patologia,
+                    "diagnostico": d.diagnostico
+                }
+                for t, p, d in tratamiento_patologia_diagnostico
+            ]
+        else:
+            # Si no hay tratamiento, devolver solo diagnóstico y patología
+            diagnostico_patologia = db.query(Diagnostico, Patologia) \
+                .join(Patologia, Patologia.id_patologia == Diagnostico.id_patologia) \
+                .filter(Diagnostico.id_diagnostico == id_diagnostico) \
+                .first()
+
+            if diagnostico_patologia:
+                d, p = diagnostico_patologia
+                return [{
+                    "id_tratamiento": None,
+                    "id_consulta": d.id_consulta,
+                    "id_patologia": p.id_patologia,
+                    "nombre_patologia": p.nombre_patologia,
+                    "especie_afecta": p.especie_afecta,
+                    "gravedad": p.gravedad,
+                    "es_crónica": p.es_crónica,
+                    "es_contagiosa": p.es_contagiosa,
+                    "fecha_inicio_tratamiento": None,
+                    "eficacia_tratamiento": None,
+                    "tipo_tratamiento": None,
+                    "tipo_diagnostico": d.tipo_diagnostico,
+                    "fecha_diagnostico": d.fecha_diagnostico,
+                    "estado_patologia": d.estado_patologia,
+                    "diagnostico": d.diagnostico
+                }]
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Error al actualizar: {str(e)}")

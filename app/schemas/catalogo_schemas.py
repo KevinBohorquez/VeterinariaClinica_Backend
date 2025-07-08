@@ -164,6 +164,32 @@ class PatologiaResponse(BaseResponse):
     es_contagiosa: Optional[bool]
 
 
+class PatologiaUpdate(BaseModel):
+    """Schema para actualizar patología"""
+    nombre_patologia: Optional[str] = None
+    especie_afecta: Optional[str] = None
+    gravedad: Optional[str] = None
+    es_cronica: Optional[bool] = None
+    es_contagiosa: Optional[bool] = None
+
+    @validator('nombre_patologia')
+    def validate_nombre_patologia(cls, v):
+        if v is not None and len(v.strip()) < 3:
+            raise ValueError('Nombre de patologia debe tener al menos 3 caracteres')
+        return v.strip().title() if v else v
+
+    @validator('especie_afecta')
+    def validate_especie_afecta(cls, v):
+        if v is not None and v not in ['Perro', 'Gato', 'Ambas']:
+            raise ValueError('Especie afecta debe ser Perro, Gato o Ambas')
+        return v
+
+    @validator('gravedad')
+    def validate_gravedad(cls, v):
+        if v is not None and v not in ['Leve', 'Moderada', 'Grave', 'Critica']:
+            raise ValueError('Gravedad debe ser Leve, Moderada, Grave o Critica')
+        return v
+
 # ===== CLIENTE_MASCOTA =====
 
 class ClienteMascotaCreate(BaseModel):
