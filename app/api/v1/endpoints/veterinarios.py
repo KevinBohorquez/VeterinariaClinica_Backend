@@ -416,3 +416,24 @@ async def delete_veterinario(
             detail=f"Error al eliminar veterinario: {str(e)}"
         )
 
+
+@router.put("/veterinario/usuario/{id_usuario}/disposicion", response_model=Veterinario)
+async def update_veterinario_disposicion(id_usuario: int, db: Session = Depends(get_db)):
+    try:
+        # Buscamos el veterinario usando el id_usuario
+        veterinario = db.query(Veterinario).filter(Veterinario.id_usuario == id_usuario).first()
+
+        if not veterinario:
+            raise HTTPException(status_code=404, detail="Veterinario no encontrado")
+
+        # Actualizamos la disposición del veterinario a 'Ocupado'
+        veterinario.disposicion = 'Ocupado'
+
+        # Guardamos los cambios en la base de datos
+        db.commit()
+        db.refresh(veterinario)
+
+        return veterinario
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error al actualizar disposición: {str(e)}")
