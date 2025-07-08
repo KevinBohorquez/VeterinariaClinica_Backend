@@ -486,64 +486,37 @@ async def update_veterinario_disposicion(
             detail=f"Error al actualizar disposición: {str(e)}"
         )
 
-@router.get("resultados-completos/{id_usuario}")
-def get_resultados_completos_por_usuario(id_usuario: int, db: Session = Depends(get_db)):
-    # Validar veterinario
+@router.get("/resultados-citas/{id_usuario}")
+def get_resultados_y_citas(id_usuario: int, db: Session = Depends(get_db)):
+    # Buscar al veterinario por id_usuario
     veterinario = db.query(Veterinario).filter(Veterinario.id_usuario == id_usuario).first()
     if not veterinario:
-        raise HTTPException(status_code=404, detail="No se encontró el veterinario asociado a este usuario")
+        raise HTTPException(status_code=404, detail="Veterinario no encontrado")
 
-    # Traer todos los resultados con joins
+    # Hacer JOIN con ResultadoServicio y Cita
     resultados = (
         db.query(ResultadoServicio)
-        .join(ResultadoServicio.cita)
-        .join(Cita.mascota)
-        .join(Cita.servicio_solicitado)
-        .join(ServicioSolicitado.servicio)
-        .options(
-            joinedload(ResultadoServicio.cita)
-            .joinedload(Cita.mascota),
-            joinedload(ResultadoServicio.cita)
-            .joinedload(Cita.servicio_solicitado)
-            .joinedload(ServicioSolicitado.servicio)
-        )
+        .join(Cita, ResultadoServicio.id_cita == Cita.id_cita)
         .filter(ResultadoServicio.id_veterinario == veterinario.id_veterinario)
+        .options(joinedload(ResultadoServicio.cita))
         .all()
     )
 
-    # Serializar
-    resultado_list = []
-    for r in resultados:
-        cita = r.cita
-        mascota = cita.mascota if cita else None
-        servicio_solicitado = cita.servicio_solicitado if cita else None
-        servicio = servicio_solicitado.servicio if servicio_solicitado else None
-
-        resultado_dict = {
+    # Retornar un JSON con toda la info
+    return [
+        {
             "id_resultado": r.id_resultado,
-            "id_cita": r.id_cita,
             "resultado": r.resultado,
             "interpretacion": r.interpretacion,
             "archivo_adjunto": r.archivo_adjunto,
-            "fecha_realizacion": r.fecha_realizacion.isoformat() if r.fecha_realizacion else None,
+            "fecha_realizacion": r.fecha_realizacion,
             "cita": {
-                "id_cita": cita.id_cita if cita else None,
-                "fecha_hora_programada": cita.fecha_hora_programada.isoformat() if cita and cita.fecha_hora_programada else None,
-                "estado_cita": cita.estado_cita if cita else None,
-                "mascota": {
-                    "id_mascota": mascota.id_mascota if mascota else None,
-                    "nombre": mascota.nombre if mascota else None,
-                    "sexo": mascota.sexo if mascota else None,
-                    "color": mascota.color if mascota else None,
-                } if mascota else None,
-                "servicio": {
-                    "id_servicio": servicio.id_servicio if servicio else None,
-                    "nombre_servicio": servicio.nombre_servicio if servicio else None,
-                    "precio": float(servicio.precio) if servicio else None
-                } if servicio else None
-            } if cita else None
+                "id_cita": r.cita.id_cita,
+                "fecha_hora_programada": r.cita.fecha_hora_programada,
+                "estado_cita": r.cita.estado_cita,
+                "requiere_ayuno": r.cita.requiere_ayuno,
+                "observaciones": r.cita.observaciones,
+            },
         }
-
-        resultado_list.append(resultado_dict)
-
-    return resultado_list
+        for r in resultados
+    ]
