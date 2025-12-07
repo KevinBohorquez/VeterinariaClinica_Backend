@@ -8,6 +8,7 @@ from app.config.database import get_db
 from app.crud.consulta_crud import (
     solicitud_atencion
 )
+from app.models import Triaje, Veterinario, SolicitudAtencion
 
 from app.schemas.consulta_schema import (
     SolicitudAtencionResponse, SolicitudAtencionCreate
@@ -133,3 +134,53 @@ async def delete_solicitud(
 
     solicitud_atencion.remove(db, id=solicitud_id)
     return {"message": "Solicitud eliminada correctamente", "success": True}
+
+
+@router.get("/veterinario/{id_usuario}", response_model=List[SolicitudAtencionResponse])
+async def get_solicitudes_by_veterinario(
+        id_usuario: int,
+        estado: Optional[str] = Query(None, description="Filtrar por estado de la solicitud"),
+        tipo_solicitud: Optional[str] = Query(None, description="Filtrar por tipo de solicitud"),
+        limit: int = Query(50, ge=1, le=100, description="Límite de resultados"),
+        db: Session = Depends(get_db)
+):
+    """
+    Obtener solicitudes de atención relacionadas con el veterinario por id_usuario.
+    """
+    try:
+        # 1️⃣ Buscar el veterinario
+        veterinario = db.query(Veterinario).filter(Veterinario.id_usuario == id_usuario).first()
+        if not veterinario:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Veterinario no encontrado"
+            )
+
+        # 2️⃣ Buscar los triajes hechos por ese veterinario
+        triajes = db.query(Triaje).filter(Triaje.id_veterinario == veterinario.id_veterinario).all()
+        if not triajes:
+            return []
+
+        # 3️⃣ Obtener los IDs de solicitudes
+        solicitud_ids = [triaje.id_solicitud for triaje in triajes]
+
+        # 4️⃣ Consulta base de solicitudes
+        query = db.query(SolicitudAtencion).filter(SolicitudAtencion.id_solicitud.in_(solicitud_ids))
+
+        # 5️⃣ Filtros opcionales
+        if estado:
+            query = query.filter(SolicitudAtencion.estado == estado)
+        if tipo_solicitud:
+            query = query.filter(SolicitudAtencion.tipo_solicitud == tipo_solicitud)
+
+        solicitudes = query.limit(limit).all()
+
+        return solicitudes
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error al obtener solicitudes: {str(e)}"
+        )

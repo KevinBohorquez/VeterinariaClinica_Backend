@@ -1,11 +1,12 @@
 # app/api/v1/endpoints/veterinarios.py
 from fastapi import APIRouter, Depends, HTTPException, status, Query
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from typing import List, Optional
 
 from app.config.database import get_db
 # ✅ TEMPORAL: Usar el patrón que funciona en clientes
 from app.crud import veterinario  # ← Si existe este import
+from app.models import ResultadoServicio, Cita, ServicioSolicitado
 from app.models.veterinario import Veterinario
 from app.models.especialidad import Especialidad
 from app.schemas import VeterinarioResponse, VeterinarioCreate, VeterinarioUpdate
@@ -450,3 +451,72 @@ async def update_veterinario_disposicion(
             status_code=500,
             detail=f"Error al actualizar disposición: {str(e)}"
         )
+
+@router.put("/veterinario/usuario/{id_usuario}/disposicionLibre", response_model=VeterinarioResponse)
+async def update_veterinario_disposicion(
+        id_usuario: int,
+        db: Session = Depends(get_db)
+):
+    """
+    Actualizar la disposición de un veterinario a 'Ocupado'
+    """
+    try:
+        # Buscar al veterinario usando el id_usuario
+        veterinario_obj = db.query(Veterinario).filter(Veterinario.id_usuario == id_usuario).first()
+
+        if not veterinario_obj:
+            raise HTTPException(
+                status_code=404,
+                detail="Veterinario no encontrado"
+            )
+
+        # Crear objeto con los datos a actualizar
+        disposicion_data = {"disposicion": "Libre"}
+
+        # Actualizar el veterinario usando el patrón .update()
+        veterinario_actualizado = veterinario.update(db, db_obj=veterinario_obj, obj_in=disposicion_data)
+
+        return veterinario_actualizado
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error al actualizar disposición: {str(e)}"
+        )
+
+@router.get("/resultados-citas/{id_usuario}")
+def get_resultados_y_citas(id_usuario: int, db: Session = Depends(get_db)):
+    # Buscar al veterinario por id_usuario
+    veterinario = db.query(Veterinario).filter(Veterinario.id_usuario == id_usuario).first()
+    if not veterinario:
+        raise HTTPException(status_code=404, detail="Veterinario no encontrado")
+
+    # Hacer JOIN con ResultadoServicio y Cita
+    resultados = (
+        db.query(ResultadoServicio)
+        .join(Cita, ResultadoServicio.id_cita == Cita.id_cita)
+        .filter(ResultadoServicio.id_veterinario == veterinario.id_veterinario)
+        .options(joinedload(ResultadoServicio.cita))
+        .all()
+    )
+
+    # Retornar un JSON con toda la info
+    return [
+        {
+            "id_resultado": r.id_resultado,
+            "resultado": r.resultado,
+            "interpretacion": r.interpretacion,
+            "archivo_adjunto": r.archivo_adjunto,
+            "fecha_realizacion": r.fecha_realizacion,
+            "cita": {
+                "id_cita": r.cita.id_cita,
+                "fecha_hora_programada": r.cita.fecha_hora_programada,
+                "estado_cita": r.cita.estado_cita,
+                "requiere_ayuno": r.cita.requiere_ayuno,
+                "observaciones": r.cita.observaciones,
+            },
+        }
+        for r in resultados
+    ]

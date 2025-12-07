@@ -1,5 +1,7 @@
 # app/models/resultado_servicio.py
 from sqlalchemy import Column, Integer, DateTime, Text, String, ForeignKey, CheckConstraint
+from sqlalchemy.orm import relationship
+
 from app.models.base import Base
 
 
@@ -14,7 +16,9 @@ class ResultadoServicio(Base):
     interpretacion = Column(Text)
     archivo_adjunto = Column(String(100))
     fecha_realizacion = Column(DateTime, nullable=False)
-    
+
+    cita = relationship("Cita", backref="resultados")
+
     # Constraints de validación
     __table_args__ = (
         CheckConstraint("LENGTH(TRIM(resultado)) >= 5", name='check_resultado'),
